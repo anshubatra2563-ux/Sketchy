@@ -6,10 +6,13 @@ export type Viewport = {
 
 export type RectangleElement = {
     id : string,
+    type:"rectangle",
     x : number,
     y : number,
     width : number,
-    height : number
+    height : number,
+    fillColor: string;
+    strokeColor: string;
 } 
 
 export type Element = RectangleElement
