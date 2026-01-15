@@ -15,7 +15,7 @@ export type RectangleElement = {
     strokeColor: string;
 } 
 
-export type Element = RectangleElement
+export type Element = RectangleElement 
 
 export type SceneState = {
     elements : Element[],
