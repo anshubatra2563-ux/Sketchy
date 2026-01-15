@@ -79,6 +79,8 @@ export default function Home() {
 
       const element = sceneRef.current.elements.find((e) => e.id === elementId)
       if(!element) return
+      element.x = Math.min(startX, x);
+      element.y = Math.min(startY, y);
       element.width = Math.abs(x - startX)
       element.height = Math.abs(y - startY)
     }
