@@ -11,6 +11,7 @@ type ToolState =
       startY: number;
       elementId : string;
     }
+  |{ type : "panning-trackpad"}  
 
 
 export default function Home() {
@@ -88,13 +89,28 @@ export default function Home() {
     function onMouseUp(e:MouseEvent) {
       toolRef.current = {type:"idle"}
     }
+    function onMouseWheel(e:WheelEvent) {
+      //this stops browser scrooling
+      e.preventDefault();
 
+      if(e.ctrlKey) return;
+
+      toolRef.current = {type:"panning-trackpad"}
+
+      const viewport = sceneRef.current.viewport
+      // i am updating the offsetX and offsetY directly and the renderScene function
+      // draws different part of the world
+      viewport.offsetX += e.deltaX / viewport.zoom;
+      viewport.offsetY += e.deltaY / viewport.zoom;
+
+    }
 
 
 
     canvas.addEventListener("mousedown", onMouseDown)
     canvas.addEventListener("mousemove", onMouseMove)
     window.addEventListener("mouseup",onMouseUp)
+    canvas.addEventListener("wheel",onMouseWheel)
     return () => {
       running = false
 
@@ -102,6 +118,7 @@ export default function Home() {
       canvas.removeEventListener("mousedown", onMouseDown);
       canvas.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
+      canvas.removeEventListener("wheel", onMouseWheel);
     };
 
   },[])
