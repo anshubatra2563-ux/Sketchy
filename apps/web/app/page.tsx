@@ -11,6 +11,11 @@ type ToolState =
       startY: number;
       elementId: string;
     }
+  | {
+      type: "moving-element";
+      lastX: number;
+      lastY: number
+    }
   | { type: "panning-trackpad" };
 
 export default function Home() {
@@ -18,6 +23,8 @@ export default function Home() {
   const sceneRef = useRef<SceneState>(createInitialState());
   //initial tool is at ideal state
   const toolRef = useRef<ToolState>({ type: "idle" });
+  //this is for which element is selected
+  const selectedElementRef = useRef<string | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current!;
@@ -38,6 +45,14 @@ export default function Home() {
     }
     loop();
 
+    function isPointInsideRectangle(px: number, py: number, r: {x:number,y:number,width:number,height:number}) {
+      return (
+        px >= r.x &&
+        px <= r.x + r.width &&
+        py >= r.y &&
+        py <= r.y + r.height
+      );
+    }
     function getWorldCoordinates(e: MouseEvent) {
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -52,6 +67,25 @@ export default function Home() {
     function onMouseDown(e: MouseEvent) {
       const { x, y } = getWorldCoordinates(e);
 
+      const hit = sceneRef.current.elements.find((e) => {
+        return isPointInsideRectangle(x, y, e);
+      });
+      if (hit) {
+        toolRef.current = {
+          type: "moving-element",
+          lastX: x,
+          lastY: y,
+        };
+        // i can also store the id of the selected element in this toolRef.current like this
+        // toolRef.current = { type: "moving-element", startX: x, startY: y, elementId: hit.id };
+        // but i want that remains selected even the the mouse is up 
+        // if i store the elementId in toolRef.current, it will be lost when the mouse is up
+        // because i make the toolRef.current idle when the mouse is up
+        // so that is why i am using the another ref selectedElementRef
+        // it indicates which element is currently selected
+        selectedElementRef.current = hit.id;
+        return;
+      }
       const id = crypto.randomUUID();
       sceneRef.current.elements.push({
         id,
@@ -63,6 +97,7 @@ export default function Home() {
         fillColor: "red",
         strokeColor: "blue",
       });
+      selectedElementRef.current = id;
       toolRef.current = {
         type: "drawing-rectangle",
         startX: x,
@@ -72,17 +107,32 @@ export default function Home() {
     }
 
     function onMouseMove(e: MouseEvent) {
-      if (toolRef.current.type !== "drawing-rectangle") return;
 
       const { x, y } = getWorldCoordinates(e);
-      const { startX, startY, elementId } = toolRef.current;
-
-      const element = sceneRef.current.elements.find((e) => e.id === elementId);
-      if (!element) return;
-      element.x = Math.min(startX, x);
-      element.y = Math.min(startY, y);
-      element.width = Math.abs(x - startX);
-      element.height = Math.abs(y - startY);
+      if(toolRef.current.type == "moving-element"){ 
+        const { lastX, lastY } = toolRef.current;
+        const dx = x - lastX;
+        const dy = y - lastY;
+        const el = sceneRef.current.elements.find(
+          (el) => el.id === selectedElementRef.current
+        );
+        if(el) {
+          el.x +=dx
+          el.y +=dy
+        }
+        toolRef.current.lastX = x;
+        toolRef.current.lastY = y;
+        return
+      }
+      if(toolRef.current.type == "drawing-rectangle") {
+        const { startX, startY, elementId } = toolRef.current;
+        const element = sceneRef.current.elements.find((e) => e.id === elementId);
+        if (!element) return;
+        element.x = Math.min(startX, x);
+        element.y = Math.min(startY, y);
+        element.width = Math.abs(x - startX);
+        element.height = Math.abs(y - startY); 
+      }
     }
 
     function onMouseUp(e: MouseEvent) {
