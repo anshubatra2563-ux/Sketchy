@@ -14,7 +14,7 @@ type ToolState =
   | {
       type: "moving-element";
       lastX: number;
-      lastY: number
+      lastY: number;
     }
   | { type: "panning-trackpad" };
 
@@ -45,12 +45,13 @@ export default function Home() {
     }
     loop();
 
-    function isPointInsideRectangle(px: number, py: number, r: {x:number,y:number,width:number,height:number}) {
+    function isPointInsideRectangle(
+      px: number,
+      py: number,
+      r: { x: number; y: number; width: number; height: number }
+    ) {
       return (
-        px >= r.x &&
-        px <= r.x + r.width &&
-        py >= r.y &&
-        py <= r.y + r.height
+        px >= r.x && px <= r.x + r.width && py >= r.y && py <= r.y + r.height
       );
     }
     function getWorldCoordinates(e: MouseEvent) {
@@ -67,9 +68,17 @@ export default function Home() {
     function onMouseDown(e: MouseEvent) {
       const { x, y } = getWorldCoordinates(e);
 
-      const hit = sceneRef.current.elements.find((e) => {
-        return isPointInsideRectangle(x, y, e);
-      });
+      const elements = sceneRef.current.elements;
+      let hit = null;
+      // loop through the elements in reverse order because we want to check the topmost element first
+      // earlier oldest elements are getting selected
+      for (let i = elements.length - 1; i >= 0; i--) {
+        const el = elements[i];
+        if (isPointInsideRectangle(x, y, el!)) {
+          hit = el;
+          break;
+        }
+      }
       if (hit) {
         toolRef.current = {
           type: "moving-element",
@@ -78,7 +87,7 @@ export default function Home() {
         };
         // i can also store the id of the selected element in this toolRef.current like this
         // toolRef.current = { type: "moving-element", startX: x, startY: y, elementId: hit.id };
-        // but i want that remains selected even the the mouse is up 
+        // but i want that remains selected even the the mouse is up
         // if i store the elementId in toolRef.current, it will be lost when the mouse is up
         // because i make the toolRef.current idle when the mouse is up
         // so that is why i am using the another ref selectedElementRef
@@ -86,6 +95,8 @@ export default function Home() {
         selectedElementRef.current = hit.id;
         return;
       }
+
+      selectedElementRef.current = null;
       const id = crypto.randomUUID();
       sceneRef.current.elements.push({
         id,
@@ -107,31 +118,32 @@ export default function Home() {
     }
 
     function onMouseMove(e: MouseEvent) {
-
       const { x, y } = getWorldCoordinates(e);
-      if(toolRef.current.type == "moving-element"){ 
+      if (toolRef.current.type == "moving-element") {
         const { lastX, lastY } = toolRef.current;
         const dx = x - lastX;
         const dy = y - lastY;
         const el = sceneRef.current.elements.find(
           (el) => el.id === selectedElementRef.current
         );
-        if(el) {
-          el.x +=dx
-          el.y +=dy
+        if (el) {
+          el.x += dx;
+          el.y += dy;
         }
         toolRef.current.lastX = x;
         toolRef.current.lastY = y;
-        return
+        return;
       }
-      if(toolRef.current.type == "drawing-rectangle") {
+      if (toolRef.current.type == "drawing-rectangle") {
         const { startX, startY, elementId } = toolRef.current;
-        const element = sceneRef.current.elements.find((e) => e.id === elementId);
+        const element = sceneRef.current.elements.find(
+          (e) => e.id === elementId
+        );
         if (!element) return;
         element.x = Math.min(startX, x);
         element.y = Math.min(startY, y);
         element.width = Math.abs(x - startX);
-        element.height = Math.abs(y - startY); 
+        element.height = Math.abs(y - startY);
       }
     }
 
