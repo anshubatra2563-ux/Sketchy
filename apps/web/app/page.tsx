@@ -15,8 +15,7 @@ type ToolState =
       type: "moving-element";
       lastX: number;
       lastY: number;
-    }
-  | { type: "panning-trackpad" };
+    };
 
 export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -180,13 +179,13 @@ export default function Home() {
         sceneRef.current.viewport.zoom = newZoom;
 
         // this is necessary to keep the world point under the cursor same before adn after the zoom
-        sceneRef.current.viewport.offsetX = worldX - mouseX / newZoom;
         sceneRef.current.viewport.offsetY = worldY - mouseY / newZoom;
+        sceneRef.current.viewport.offsetX = worldX - mouseX / newZoom;
 
         return;
       }
 
-      toolRef.current = { type: "panning-trackpad" };
+      
 
       const viewport = sceneRef.current.viewport;
       // i am updating the offsetX and offsetY directly and the renderScene function
