@@ -19,5 +19,6 @@ export type Element = RectangleElement
 
 export type SceneState = {
     elements : Element[],
-    viewport : Viewport
+    viewport : Viewport,
+    selectedElementId: string | null;
 }

@@ -13,6 +13,12 @@ export function renderScene(
     state.elements.forEach((element) => {
         drawElement(ctx,element)
     });
+    if(state.selectedElementId) {
+        const selectedElement = state.elements.find((el) => el.id === state.selectedElementId);
+        if(selectedElement){
+           drawSelectionElementOutline(ctx,selectedElement,zoom)
+        }
+    }
 } 
 
 
@@ -25,4 +31,14 @@ function drawElement(ctx : CanvasRenderingContext2D,element : Element){
         ctx.strokeRect(element.x, element.y, element.width, element.height);
         break;
    }
+}
+
+
+function drawSelectionElementOutline(ctx:CanvasRenderingContext2D,element:{ x: number; y: number; width: number; height: number },zoom:number) {
+    ctx.save()
+    ctx.strokeStyle = "#4c9ffe"
+    ctx.lineWidth   = 1/zoom
+    ctx.setLineDash([6/zoom,4/zoom])
+    ctx.strokeRect(element.x,element.y,element.width,element.height);
+    ctx.restore()
 }

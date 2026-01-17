@@ -22,8 +22,6 @@ export default function Home() {
   const sceneRef = useRef<SceneState>(createInitialState());
   //initial tool is at ideal state
   const toolRef = useRef<ToolState>({ type: "idle" });
-  //this is for which element is selected
-  const selectedElementRef = useRef<string | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current!;
@@ -79,23 +77,16 @@ export default function Home() {
         }
       }
       if (hit) {
+        sceneRef.current.selectedElementId = hit.id;
         toolRef.current = {
           type: "moving-element",
           lastX: x,
           lastY: y,
         };
-        // i can also store the id of the selected element in this toolRef.current like this
-        // toolRef.current = { type: "moving-element", startX: x, startY: y, elementId: hit.id };
-        // but i want that remains selected even the the mouse is up
-        // if i store the elementId in toolRef.current, it will be lost when the mouse is up
-        // because i make the toolRef.current idle when the mouse is up
-        // so that is why i am using the another ref selectedElementRef
-        // it indicates which element is currently selected
-        selectedElementRef.current = hit.id;
         return;
       }
 
-      selectedElementRef.current = null;
+      sceneRef.current.selectedElementId = null
       const id = crypto.randomUUID();
       sceneRef.current.elements.push({
         id,
@@ -107,7 +98,7 @@ export default function Home() {
         fillColor: "red",
         strokeColor: "blue",
       });
-      selectedElementRef.current = id;
+      sceneRef.current.selectedElementId = id;
       toolRef.current = {
         type: "drawing-rectangle",
         startX: x,
@@ -123,7 +114,7 @@ export default function Home() {
         const dx = x - lastX;
         const dy = y - lastY;
         const el = sceneRef.current.elements.find(
-          (el) => el.id === selectedElementRef.current
+          (el) => el.id === sceneRef.current.selectedElementId
         );
         if (el) {
           el.x += dx;
