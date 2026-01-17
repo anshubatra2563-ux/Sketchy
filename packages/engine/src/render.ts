@@ -35,10 +35,12 @@ function drawElement(ctx : CanvasRenderingContext2D,element : Element){
 
 
 function drawSelectionElementOutline(ctx:CanvasRenderingContext2D,element:{ x: number; y: number; width: number; height: number },zoom:number) {
+    const SCREEN_PADDING = 4;
+    const padding = SCREEN_PADDING / zoom;
     ctx.save()
     ctx.strokeStyle = "#4c9ffe"
     ctx.lineWidth   = 1/zoom
     ctx.setLineDash([6/zoom,4/zoom])
-    ctx.strokeRect(element.x,element.y,element.width,element.height);
+    ctx.strokeRect(element.x-padding,element.y-padding,element.width+padding*2,element.height+padding*2);
     ctx.restore()
 }
