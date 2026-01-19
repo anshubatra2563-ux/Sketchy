@@ -83,6 +83,7 @@ export default function Home() {
           lastX: x,
           lastY: y,
         };
+        sceneRef.current.isEditing = true;
         return;
       }
 
@@ -105,6 +106,7 @@ export default function Home() {
         startY: y,
         elementId: id,
       };
+      sceneRef.current.isEditing = true;
     }
 
     function onMouseMove(e: MouseEvent) {
@@ -139,6 +141,7 @@ export default function Home() {
 
     function onMouseUp(e: MouseEvent) {
       toolRef.current = { type: "idle" };
+      sceneRef.current.isEditing = false;
     }
     function onMouseWheel(e: WheelEvent) {
       //this stops browser scrooling

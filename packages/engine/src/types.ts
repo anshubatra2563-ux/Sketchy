@@ -21,4 +21,5 @@ export type SceneState = {
     elements : Element[],
     viewport : Viewport,
     selectedElementId: string | null;
+    isEditing : boolean
 }

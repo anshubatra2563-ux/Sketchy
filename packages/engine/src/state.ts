@@ -8,7 +8,8 @@ export function createInitialState(): SceneState {
             offsetY: 0,
             zoom: 1,
         },
-        selectedElementId: null
+        selectedElementId: null,
+        isEditing: false
     };
 }
 

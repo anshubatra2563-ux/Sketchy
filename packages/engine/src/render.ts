@@ -3,7 +3,7 @@ import { SceneState,Element } from "./types";
 export function renderScene(
     ctx :  CanvasRenderingContext2D,
     canvas : HTMLCanvasElement,
-    state : SceneState
+    state : SceneState,
 ){
     const { offsetX,offsetY ,zoom} = state.viewport
     ctx.setTransform(1,0,0,1,0,0)
@@ -13,7 +13,7 @@ export function renderScene(
     state.elements.forEach((element) => {
         drawElement(ctx,element)
     });
-    if(state.selectedElementId) {
+    if(state.selectedElementId && !state.isEditing) {
         const selectedElement = state.elements.find((el) => el.id === state.selectedElementId);
         if(selectedElement){
            drawSelectionElementOutline(ctx,selectedElement,zoom)
