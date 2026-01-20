@@ -1,7 +1,7 @@
 import { SceneState,Element } from "./types";
 
-const SELECTION_PADDING_PX = 8;
-const RESIZE_BOX_SIZE_PX = 8;
+export const SELECTION_PADDING_PX = 8;
+export const RESIZE_BOX_SIZE_PX = 8;
 export function renderScene(
     ctx :  CanvasRenderingContext2D,
     canvas : HTMLCanvasElement,

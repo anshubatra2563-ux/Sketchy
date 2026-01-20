@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { createInitialState, renderScene, SceneState } from "@repo/engine";
+import { createInitialState, RectangleElement, renderScene, SceneState, SELECTION_PADDING_PX, RESIZE_BOX_SIZE_PX } from "@repo/engine";
+
+type ResizeHandle = "resize-top-edge"
+  | "resize-right-edge"
+  | "resize-bottom-edge"
+  | "resize-left-edge"
+  | "resize-top-left-edges"
+  | "resize-top-right-edges"
+  | "resize-bottom-right-edges"
+  | "resize-bottom-left-edges";
 
 type ToolState =
   | { type: "idle" }
@@ -15,6 +24,14 @@ type ToolState =
       type: "moving-element";
       lastX: number;
       lastY: number;
+    }
+  | {
+      type: "resizing-element";
+      elementId: string;
+      handle: ResizeHandle;
+      startX: number;
+      startY: number;
+      startRect : RectangleElement
     };
 
 export default function Home() {
@@ -62,10 +79,74 @@ export default function Home() {
         y: y / zoom + offsetY,
       };
     }
+
+  function hitResizeBox(
+  x: number,
+  y: number,
+  rect: RectangleElement
+): ResizeHandle | null {
+  const zoom = sceneRef.current.viewport.zoom;
+  const padding = SELECTION_PADDING_PX / zoom;
+  const size = RESIZE_BOX_SIZE_PX / zoom;
+  const half = size / 2;
+
+  const left = rect.x - padding;
+  const right = rect.x + rect.width + padding;
+  const top = rect.y - padding;
+  const bottom = rect.y + rect.height + padding;
+  const centerX = (left + right) / 2;
+  const centerY = (top + bottom) / 2;
+
+  const handles = [
+    { name: "resize-top-left-edges", x: left, y: top },
+    { name: "resize-top-edge", x: centerX, y: top },
+    { name: "resize-top-right-edges", x: right, y: top },
+
+    { name: "resize-left-edge", x: left, y: centerY },
+    { name: "resize-right-edge", x: right, y: centerY },
+
+    { name: "resize-bottom-left-edges", x: left, y: bottom },
+    { name: "resize-bottom-edge", x: centerX, y: bottom },
+    { name: "resize-bottom-right-edges", x: right, y: bottom },
+  ] as const;
+
+  for (const handle of handles) {
+    if (
+      x >= handle.x - half &&
+      x <= handle.x + half &&
+      y >= handle.y - half &&
+      y <= handle.y + half
+    ) {
+      return handle.name;
+    }
+  }
+
+  return null;
+}
+
     function onMouseDown(e: MouseEvent) {
       const { x, y } = getWorldCoordinates(e);
 
       const elements = sceneRef.current.elements;
+      if(sceneRef.current.selectedElementId) {
+        const selectedElement = elements.find((el) => el.id === sceneRef.current.selectedElementId)
+        if(selectedElement) {
+          const handle = hitResizeBox(x, y, selectedElement)
+          if(handle) {
+          toolRef.current = {
+          type: "resizing-element",
+          elementId: selectedElement.id,
+          handle,
+          startX: x,
+          startY: y,
+          startRect: { ...selectedElement },
+        };
+        sceneRef.current.isEditing = false;
+        return;
+          }
+        }
+      }
+
       let hit = null;
       // loop through the elements in reverse order because we want to check the topmost element first
       // earlier oldest elements are getting selected
@@ -111,6 +192,63 @@ export default function Home() {
 
     function onMouseMove(e: MouseEvent) {
       const { x, y } = getWorldCoordinates(e);
+
+      if (toolRef.current.type === "resizing-element") {
+    const { elementId, handle, startRect, startX, startY } = toolRef.current;
+
+    const el = sceneRef.current.elements.find(el => el.id === elementId);
+    if (!el) return;
+
+    const dx = x - startX;
+    const dy = y - startY;
+
+    // Apply resize depending on handle
+    switch (handle) {
+      case "resize-right-edge":
+        el.width = Math.max(1, startRect.width + dx);
+        break;
+
+      case "resize-bottom-edge":
+        el.height = Math.max(1, startRect.height + dy);
+        break;
+
+      case "resize-left-edge":
+        el.x = startRect.x + dx;
+        el.width = Math.max(1, startRect.width - dx);
+        break;
+
+      case "resize-top-edge":
+        el.y = startRect.y + dy;
+        el.height = Math.max(1, startRect.height - dy);
+        break;
+
+      case "resize-top-left-edges":
+        el.x = startRect.x + dx;
+        el.y = startRect.y + dy;
+        el.width = Math.max(1, startRect.width - dx);
+        el.height = Math.max(1, startRect.height - dy);
+        break;
+
+      case "resize-top-right-edges":
+        el.y = startRect.y + dy;
+        el.width = Math.max(1, startRect.width + dx);
+        el.height = Math.max(1, startRect.height - dy);
+        break;
+
+      case "resize-bottom-right-edges":
+        el.width = Math.max(1, startRect.width + dx);
+        el.height = Math.max(1, startRect.height + dy);
+        break;
+
+      case "resize-bottom-left-edges":
+        el.x = startRect.x + dx;
+        el.width = Math.max(1, startRect.width - dx);
+        el.height = Math.max(1, startRect.height + dy);
+        break;
+    }
+
+    return;
+  }
       if (toolRef.current.type == "moving-element") {
         const { lastX, lastY } = toolRef.current;
         const dx = x - lastX;
