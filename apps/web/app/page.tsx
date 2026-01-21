@@ -1,9 +1,17 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { createInitialState, RectangleElement, renderScene, SceneState, SELECTION_PADDING_PX, RESIZE_BOX_SIZE_PX } from "@repo/engine";
+import {
+  createInitialState,
+  RectangleElement,
+  renderScene,
+  SceneState,
+  SELECTION_PADDING_PX,
+  RESIZE_BOX_SIZE_PX,
+} from "@repo/engine";
 
-type ResizeHandle = "resize-top-edge"
+type ResizeHandle =
+  | "resize-top-edge"
   | "resize-right-edge"
   | "resize-bottom-edge"
   | "resize-left-edge"
@@ -31,7 +39,7 @@ type ToolState =
       handle: ResizeHandle;
       startX: number;
       startY: number;
-      startRect : RectangleElement
+      startRect: RectangleElement;
     };
 
 export default function Home() {
@@ -62,7 +70,7 @@ export default function Home() {
     function isPointInsideRectangle(
       px: number,
       py: number,
-      r: { x: number; y: number; width: number; height: number }
+      r: { x: number; y: number; width: number; height: number },
     ) {
       return (
         px >= r.x && px <= r.x + r.width && py >= r.y && py <= r.y + r.height
@@ -80,69 +88,71 @@ export default function Home() {
       };
     }
 
-  function hitResizeBox(
-  x: number,
-  y: number,
-  rect: RectangleElement
-): ResizeHandle | null {
-  const zoom = sceneRef.current.viewport.zoom;
-  const padding = SELECTION_PADDING_PX / zoom;
-  const size = RESIZE_BOX_SIZE_PX / zoom;
-  const half = size / 2;
+    function hitResizeBox(
+      x: number,
+      y: number,
+      rect: RectangleElement,
+    ): ResizeHandle | null {
+      const zoom = sceneRef.current.viewport.zoom;
+      const padding = SELECTION_PADDING_PX / zoom;
+      const size = RESIZE_BOX_SIZE_PX / zoom;
+      const half = size / 2;
 
-  const left = rect.x - padding;
-  const right = rect.x + rect.width + padding;
-  const top = rect.y - padding;
-  const bottom = rect.y + rect.height + padding;
-  const centerX = (left + right) / 2;
-  const centerY = (top + bottom) / 2;
+      const left = rect.x - padding;
+      const right = rect.x + rect.width + padding;
+      const top = rect.y - padding;
+      const bottom = rect.y + rect.height + padding;
+      const centerX = (left + right) / 2;
+      const centerY = (top + bottom) / 2;
 
-  const handles = [
-    { name: "resize-top-left-edges", x: left, y: top },
-    { name: "resize-top-edge", x: centerX, y: top },
-    { name: "resize-top-right-edges", x: right, y: top },
+      const handles = [
+        { name: "resize-top-left-edges", x: left, y: top },
+        { name: "resize-top-edge", x: centerX, y: top },
+        { name: "resize-top-right-edges", x: right, y: top },
 
-    { name: "resize-left-edge", x: left, y: centerY },
-    { name: "resize-right-edge", x: right, y: centerY },
+        { name: "resize-left-edge", x: left, y: centerY },
+        { name: "resize-right-edge", x: right, y: centerY },
 
-    { name: "resize-bottom-left-edges", x: left, y: bottom },
-    { name: "resize-bottom-edge", x: centerX, y: bottom },
-    { name: "resize-bottom-right-edges", x: right, y: bottom },
-  ] as const;
+        { name: "resize-bottom-left-edges", x: left, y: bottom },
+        { name: "resize-bottom-edge", x: centerX, y: bottom },
+        { name: "resize-bottom-right-edges", x: right, y: bottom },
+      ] as const;
 
-  for (const handle of handles) {
-    if (
-      x >= handle.x - half &&
-      x <= handle.x + half &&
-      y >= handle.y - half &&
-      y <= handle.y + half
-    ) {
-      return handle.name;
+      for (const handle of handles) {
+        if (
+          x >= handle.x - half &&
+          x <= handle.x + half &&
+          y >= handle.y - half &&
+          y <= handle.y + half
+        ) {
+          return handle.name;
+        }
+      }
+
+      return null;
     }
-  }
-
-  return null;
-}
 
     function onMouseDown(e: MouseEvent) {
       const { x, y } = getWorldCoordinates(e);
 
       const elements = sceneRef.current.elements;
-      if(sceneRef.current.selectedElementId) {
-        const selectedElement = elements.find((el) => el.id === sceneRef.current.selectedElementId)
-        if(selectedElement) {
-          const handle = hitResizeBox(x, y, selectedElement)
-          if(handle) {
-          toolRef.current = {
-          type: "resizing-element",
-          elementId: selectedElement.id,
-          handle,
-          startX: x,
-          startY: y,
-          startRect: { ...selectedElement },
-        };
-        sceneRef.current.isEditing = false;
-        return;
+      if (sceneRef.current.selectedElementId) {
+        const selectedElement = elements.find(
+          (el) => el.id === sceneRef.current.selectedElementId,
+        );
+        if (selectedElement) {
+          const handle = hitResizeBox(x, y, selectedElement);
+          if (handle) {
+            toolRef.current = {
+              type: "resizing-element",
+              elementId: selectedElement.id,
+              handle,
+              startX: x,
+              startY: y,
+              startRect: { ...selectedElement },
+            };
+            sceneRef.current.isEditing = false;
+            return;
           }
         }
       }
@@ -168,7 +178,7 @@ export default function Home() {
         return;
       }
 
-      sceneRef.current.selectedElementId = null
+      sceneRef.current.selectedElementId = null;
       const id = crypto.randomUUID();
       sceneRef.current.elements.push({
         id,
@@ -194,67 +204,155 @@ export default function Home() {
       const { x, y } = getWorldCoordinates(e);
 
       if (toolRef.current.type === "resizing-element") {
-    const { elementId, handle, startRect, startX, startY } = toolRef.current;
+        const { elementId, handle, startRect, startX, startY } =
+          toolRef.current;
 
-    const el = sceneRef.current.elements.find(el => el.id === elementId);
-    if (!el) return;
+        const el = sceneRef.current.elements.find((el) => el.id === elementId);
+        if (!el) return;
 
-    const dx = x - startX;
-    const dy = y - startY;
+        const dx = x - startX;
+        const dy = y - startY;
 
-    // Apply resize depending on handle
-    switch (handle) {
-      case "resize-right-edge":
-        el.width = Math.max(1, startRect.width + dx);
-        break;
+        // Apply resize depending on handle
+        switch (handle) {
+          case "resize-right-edge": {
+            const rawWidth = startRect.width + dx;
 
-      case "resize-bottom-edge":
-        el.height = Math.max(1, startRect.height + dy);
-        break;
+            if (rawWidth >= 0) {
+              el.width = rawWidth;
+            } else {
+              el.x = startRect.x + startRect.width;
+              el.width = Math.abs(rawWidth);
 
-      case "resize-left-edge":
-        el.x = startRect.x + dx;
-        el.width = Math.max(1, startRect.width - dx);
-        break;
+              toolRef.current = {
+                ...toolRef.current,
+                handle: "resize-left-edge",
+                startX: x,
+                startRect: { ...el },
+              };
+            }
+            break;
+          }
 
-      case "resize-top-edge":
-        el.y = startRect.y + dy;
-        el.height = Math.max(1, startRect.height - dy);
-        break;
+          case "resize-bottom-edge": {
+            const rawHeight = startRect.height + dy;
+            if (rawHeight >= 0) {
+              el.height = rawHeight;
+            } else {
+              el.y = startRect.y + startRect.height;
+              el.height = Math.abs(rawHeight);
 
-      case "resize-top-left-edges":
-        el.x = startRect.x + dx;
-        el.y = startRect.y + dy;
-        el.width = Math.max(1, startRect.width - dx);
-        el.height = Math.max(1, startRect.height - dy);
-        break;
+              toolRef.current = {
+                ...toolRef.current,
+                handle: "resize-top-edge",
+                startY: y,
+                startRect: { ...el },
+              };
+            }
+            break;
+          }
 
-      case "resize-top-right-edges":
-        el.y = startRect.y + dy;
-        el.width = Math.max(1, startRect.width + dx);
-        el.height = Math.max(1, startRect.height - dy);
-        break;
+          case "resize-left-edge": {
+            const rawWidth = startRect.width - dx;
+            if (rawWidth >= 0) {
+              el.x = startRect.x + dx;
+              el.width = rawWidth;
+            } else {
+              el.x = startRect.x + startRect.width;
+              el.width = Math.abs(rawWidth);
 
-      case "resize-bottom-right-edges":
-        el.width = Math.max(1, startRect.width + dx);
-        el.height = Math.max(1, startRect.height + dy);
-        break;
+              toolRef.current = {
+                ...toolRef.current,
+                handle: "resize-right-edge",
+                startX: x,
+                startRect: { ...el },
+              };
+            }
+            break;
+          }
 
-      case "resize-bottom-left-edges":
-        el.x = startRect.x + dx;
-        el.width = Math.max(1, startRect.width - dx);
-        el.height = Math.max(1, startRect.height + dy);
-        break;
-    }
+          case "resize-top-edge": {
+            const rawHeight = startRect.height - dy;
+            if (rawHeight >= 0) {
+              el.y = startRect.y + dy;
+              el.height = rawHeight;
+            } else {
+              el.y = startRect.y + startRect.height;
+              el.height = Math.abs(rawHeight);
 
-    return;
-  }
+              toolRef.current = {
+                ...toolRef.current,
+                handle: "resize-bottom-edge",
+                startY: y,
+                startRect: { ...el },
+              };
+            }
+            break;
+          }
+
+          case "resize-top-left-edges": {
+            const rawWidth = startRect.width - dx;
+            if (rawWidth >= 0) {
+              el.x = startRect.x + dx;
+              el.width = rawWidth;
+            } else {
+              el.x = startRect.x + startRect.width;
+              el.width = Math.abs(rawWidth);
+            }
+            const rawHeight = startRect.height - dy;
+            if (rawHeight >= 0) {
+              el.y = startRect.y + dy;
+              el.height = rawHeight;
+            } else {
+              el.y = startRect.y + startRect.height;
+              el.height = Math.abs(rawHeight);
+            }
+            break;
+          }
+
+          case "resize-top-right-edges": {
+            el.width = Math.max(1, startRect.width + dx);
+
+            const rawHeight = startRect.height - dy;
+            if (rawHeight >= 0) {
+              el.y = startRect.y + dy;
+              el.height = rawHeight;
+            } else {
+              el.y = startRect.y + startRect.height;
+              el.height = Math.abs(rawHeight);
+            }
+            break;
+          }
+
+          case "resize-bottom-right-edges": {
+            el.width = Math.max(1, startRect.width + dx);
+            el.height = Math.max(1, startRect.height + dy);
+            break;
+          }
+
+          case "resize-bottom-left-edges": {
+            const rawWidth = startRect.width - dx;
+            if (rawWidth >= 0) {
+              el.x = startRect.x + dx;
+              el.width = rawWidth;
+            } else {
+              el.x = startRect.x + startRect.width;
+              el.width = Math.abs(rawWidth);
+            }
+
+            el.height = Math.max(1, startRect.height + dy);
+            break;
+          }
+        }
+
+        return;
+      }
       if (toolRef.current.type == "moving-element") {
         const { lastX, lastY } = toolRef.current;
         const dx = x - lastX;
         const dy = y - lastY;
         const el = sceneRef.current.elements.find(
-          (el) => el.id === sceneRef.current.selectedElementId
+          (el) => el.id === sceneRef.current.selectedElementId,
         );
         if (el) {
           el.x += dx;
@@ -267,7 +365,7 @@ export default function Home() {
       if (toolRef.current.type == "drawing-rectangle") {
         const { startX, startY, elementId } = toolRef.current;
         const element = sceneRef.current.elements.find(
-          (e) => e.id === elementId
+          (e) => e.id === elementId,
         );
         if (!element) return;
         element.x = Math.min(startX, x);
@@ -316,8 +414,6 @@ export default function Home() {
 
         return;
       }
-
-      
 
       const viewport = sceneRef.current.viewport;
       // i am updating the offsetX and offsetY directly and the renderScene function
