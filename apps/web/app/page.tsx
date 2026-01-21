@@ -199,6 +199,102 @@ export default function Home() {
       };
       sceneRef.current.isEditing = true;
     }
+    function applyResize(
+      rect: RectangleElement,
+      handle: ResizeHandle,
+      dx: number,
+      dy: number,
+    ): RectangleElement {
+      const next = { ...rect };
+
+      switch (handle) {
+        case "resize-right-edge":
+          next.width += dx;
+          break;
+
+        case "resize-left-edge":
+          next.x += dx;
+          next.width -= dx;
+          break;
+
+        case "resize-bottom-edge":
+          next.height += dy;
+          break;
+
+        case "resize-top-edge":
+          next.y += dy;
+          next.height -= dy;
+          break;
+
+        case "resize-top-left-edges":
+          next.x += dx;
+          next.width -= dx;
+          next.y += dy;
+          next.height -= dy;
+          break;
+
+        case "resize-top-right-edges":
+          next.width += dx;
+          next.y += dy;
+          next.height -= dy;
+          break;
+
+        case "resize-bottom-right-edges":
+          next.width += dx;
+          next.height += dy;
+          break;
+
+        case "resize-bottom-left-edges":
+          next.x += dx;
+          next.width -= dx;
+          next.height += dy;
+          break;
+      }
+
+      return next;
+    }
+
+    // these comments are for my understanding
+    // i am using this function so that if width or height becomes negative then
+    // i can make it postive but only doing this does not solves the entire problem
+    // because if one edges passes the opposite eges then it should also changes the flip
+    // direction means if we continue to move the left edge toward the right edge then width
+    // decreases but if left edges crosses the right edge then width should be positive
+    // and also we are changing the direction of the handle basically changes the handle which you are moving
+    //for ex when left edge cross the right edge then we have to change the handle from left to right beacuse we are 
+    //doing the changes through the right edge
+    function normalizeRectAfterResize(
+      rect: RectangleElement,
+      handle: ResizeHandle,
+    ): { rect: RectangleElement; handle: ResizeHandle; flipped: boolean } {
+      let newHandle = handle;
+      let flipped = false;
+      const next = { ...rect };
+
+      if (next.width < 0) {
+        next.x += next.width;
+        next.width = Math.abs(next.width);
+        flipped = true;
+
+        if (handle.includes("left"))
+          newHandle = handle.replace("left", "right") as ResizeHandle;
+        else if (handle.includes("right"))
+          newHandle = handle.replace("right", "left") as ResizeHandle;
+      }
+
+      if (next.height < 0) {
+        next.y += next.height;
+        next.height = Math.abs(next.height);
+        flipped = true;
+
+        if (handle.includes("top"))
+          newHandle = handle.replace("top", "bottom") as ResizeHandle;
+        else if (handle.includes("bottom"))
+          newHandle = handle.replace("bottom", "top") as ResizeHandle;
+      }
+
+      return { rect: next, handle: newHandle, flipped };
+    }
 
     function onMouseMove(e: MouseEvent) {
       const { x, y } = getWorldCoordinates(e);
@@ -213,136 +309,24 @@ export default function Home() {
         const dx = x - startX;
         const dy = y - startY;
 
-        // Apply resize depending on handle
-        switch (handle) {
-          case "resize-right-edge": {
-            const rawWidth = startRect.width + dx;
+        const resized = applyResize(startRect, handle, dx, dy);
+        const {
+          rect,
+          handle: newHandle,
+          flipped,
+        } = normalizeRectAfterResize(resized, handle);
 
-            if (rawWidth >= 0) {
-              el.width = rawWidth;
-            } else {
-              el.x = startRect.x + startRect.width;
-              el.width = Math.abs(rawWidth);
+        Object.assign(el, rect);
 
-              toolRef.current = {
-                ...toolRef.current,
-                handle: "resize-left-edge",
-                startX: x,
-                startRect: { ...el },
-              };
-            }
-            break;
-          }
-
-          case "resize-bottom-edge": {
-            const rawHeight = startRect.height + dy;
-            if (rawHeight >= 0) {
-              el.height = rawHeight;
-            } else {
-              el.y = startRect.y + startRect.height;
-              el.height = Math.abs(rawHeight);
-
-              toolRef.current = {
-                ...toolRef.current,
-                handle: "resize-top-edge",
-                startY: y,
-                startRect: { ...el },
-              };
-            }
-            break;
-          }
-
-          case "resize-left-edge": {
-            const rawWidth = startRect.width - dx;
-            if (rawWidth >= 0) {
-              el.x = startRect.x + dx;
-              el.width = rawWidth;
-            } else {
-              el.x = startRect.x + startRect.width;
-              el.width = Math.abs(rawWidth);
-
-              toolRef.current = {
-                ...toolRef.current,
-                handle: "resize-right-edge",
-                startX: x,
-                startRect: { ...el },
-              };
-            }
-            break;
-          }
-
-          case "resize-top-edge": {
-            const rawHeight = startRect.height - dy;
-            if (rawHeight >= 0) {
-              el.y = startRect.y + dy;
-              el.height = rawHeight;
-            } else {
-              el.y = startRect.y + startRect.height;
-              el.height = Math.abs(rawHeight);
-
-              toolRef.current = {
-                ...toolRef.current,
-                handle: "resize-bottom-edge",
-                startY: y,
-                startRect: { ...el },
-              };
-            }
-            break;
-          }
-
-          case "resize-top-left-edges": {
-            const rawWidth = startRect.width - dx;
-            if (rawWidth >= 0) {
-              el.x = startRect.x + dx;
-              el.width = rawWidth;
-            } else {
-              el.x = startRect.x + startRect.width;
-              el.width = Math.abs(rawWidth);
-            }
-            const rawHeight = startRect.height - dy;
-            if (rawHeight >= 0) {
-              el.y = startRect.y + dy;
-              el.height = rawHeight;
-            } else {
-              el.y = startRect.y + startRect.height;
-              el.height = Math.abs(rawHeight);
-            }
-            break;
-          }
-
-          case "resize-top-right-edges": {
-            el.width = Math.max(1, startRect.width + dx);
-
-            const rawHeight = startRect.height - dy;
-            if (rawHeight >= 0) {
-              el.y = startRect.y + dy;
-              el.height = rawHeight;
-            } else {
-              el.y = startRect.y + startRect.height;
-              el.height = Math.abs(rawHeight);
-            }
-            break;
-          }
-
-          case "resize-bottom-right-edges": {
-            el.width = Math.max(1, startRect.width + dx);
-            el.height = Math.max(1, startRect.height + dy);
-            break;
-          }
-
-          case "resize-bottom-left-edges": {
-            const rawWidth = startRect.width - dx;
-            if (rawWidth >= 0) {
-              el.x = startRect.x + dx;
-              el.width = rawWidth;
-            } else {
-              el.x = startRect.x + startRect.width;
-              el.width = Math.abs(rawWidth);
-            }
-
-            el.height = Math.max(1, startRect.height + dy);
-            break;
-          }
+        if (flipped) {
+          toolRef.current = {
+            type: "resizing-element",
+            elementId,
+            handle: newHandle,
+            startX: x,
+            startY: y,
+            startRect: { ...el },
+          };
         }
 
         return;
