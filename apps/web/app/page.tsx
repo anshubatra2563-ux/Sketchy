@@ -10,6 +10,7 @@ import {
   RESIZE_BOX_SIZE_PX,
 } from "@repo/engine";
 
+const LOCALSTORAGE_KEY = "scene";
 type ResizeHandle =
   | "resize-top-edge"
   | "resize-right-edge"
@@ -42,6 +43,20 @@ type ToolState =
       startRect: RectangleElement;
     };
 
+function loadSceneFromLocalStorage(): SceneState{
+  try {
+    const data = localStorage.getItem(LOCALSTORAGE_KEY);
+    if(!data) return createInitialState();
+    return JSON.parse(data) as SceneState;
+  } catch (error) {
+    return createInitialState();
+  }
+  
+}
+
+function saveSceneToLocalStorage(scene: SceneState) {
+  localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(scene));
+}
 export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const sceneRef = useRef<SceneState>(createInitialState());
@@ -52,6 +67,8 @@ export default function Home() {
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d");
 
+    const savedScene = loadSceneFromLocalStorage();
+    sceneRef.current = savedScene;
     function resize() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -362,6 +379,7 @@ export default function Home() {
     function onMouseUp(e: MouseEvent) {
       toolRef.current = { type: "idle" };
       sceneRef.current.isEditing = false;
+      saveSceneToLocalStorage(sceneRef.current)
     }
     function onMouseWheel(e: WheelEvent) {
       //this stops browser scrooling
@@ -395,7 +413,7 @@ export default function Home() {
         // this is necessary to keep the world point under the cursor same before adn after the zoom
         sceneRef.current.viewport.offsetY = worldY - mouseY / newZoom;
         sceneRef.current.viewport.offsetX = worldX - mouseX / newZoom;
-
+        saveSceneToLocalStorage(sceneRef.current)
         return;
       }
 
@@ -404,6 +422,7 @@ export default function Home() {
       // draws different part of the world
       viewport.offsetX += e.deltaX / viewport.zoom;
       viewport.offsetY += e.deltaY / viewport.zoom;
+      saveSceneToLocalStorage
     }
 
     canvas.addEventListener("mousedown", onMouseDown);
