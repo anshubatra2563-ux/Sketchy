@@ -11,6 +11,8 @@ import {
 } from "@repo/engine";
 
 const LOCALSTORAGE_KEY = "scene";
+const WHEEL_SAVE_DELAY = 300;
+let wheelSaveTimeout: number | null = null;
 type ResizeHandle =
   | "resize-top-edge"
   | "resize-right-edge"
@@ -43,15 +45,14 @@ type ToolState =
       startRect: RectangleElement;
     };
 
-function loadSceneFromLocalStorage(): SceneState{
+function loadSceneFromLocalStorage(): SceneState {
   try {
     const data = localStorage.getItem(LOCALSTORAGE_KEY);
-    if(!data) return createInitialState();
+    if (!data) return createInitialState();
     return JSON.parse(data) as SceneState;
   } catch (error) {
     return createInitialState();
   }
-  
 }
 
 function saveSceneToLocalStorage(scene: SceneState) {
@@ -278,7 +279,7 @@ export default function Home() {
     // direction means if we continue to move the left edge toward the right edge then width
     // decreases but if left edges crosses the right edge then width should be positive
     // and also we are changing the direction of the handle basically changes the handle which you are moving
-    //for ex when left edge cross the right edge then we have to change the handle from left to right beacuse we are 
+    //for ex when left edge cross the right edge then we have to change the handle from left to right beacuse we are
     //doing the changes through the right edge
     function normalizeRectAfterResize(
       rect: RectangleElement,
@@ -379,8 +380,19 @@ export default function Home() {
     function onMouseUp(e: MouseEvent) {
       toolRef.current = { type: "idle" };
       sceneRef.current.isEditing = false;
-      saveSceneToLocalStorage(sceneRef.current)
+      saveSceneToLocalStorage(sceneRef.current);
     }
+    function DebounceWheelSave() {
+      if (wheelSaveTimeout !== null) {
+        clearTimeout(wheelSaveTimeout);
+      }
+
+      wheelSaveTimeout = window.setTimeout(() => {
+        saveSceneToLocalStorage(sceneRef.current);
+        wheelSaveTimeout = null;
+      }, WHEEL_SAVE_DELAY);
+    }
+
     function onMouseWheel(e: WheelEvent) {
       //this stops browser scrooling
       e.preventDefault();
@@ -413,7 +425,7 @@ export default function Home() {
         // this is necessary to keep the world point under the cursor same before adn after the zoom
         sceneRef.current.viewport.offsetY = worldY - mouseY / newZoom;
         sceneRef.current.viewport.offsetX = worldX - mouseX / newZoom;
-        saveSceneToLocalStorage(sceneRef.current)
+        DebounceWheelSave();
         return;
       }
 
@@ -422,7 +434,7 @@ export default function Home() {
       // draws different part of the world
       viewport.offsetX += e.deltaX / viewport.zoom;
       viewport.offsetY += e.deltaY / viewport.zoom;
-      saveSceneToLocalStorage
+      DebounceWheelSave();
     }
 
     canvas.addEventListener("mousedown", onMouseDown);
