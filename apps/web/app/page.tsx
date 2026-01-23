@@ -8,7 +8,7 @@ import {
   SceneState,
   SELECTION_PADDING_PX,
   RESIZE_BOX_SIZE_PX,
-  Element
+  Element,
 } from "@repo/engine";
 
 const LOCALSTORAGE_KEY = "scene";
@@ -46,7 +46,7 @@ type ToolState =
       startRect: BoxLike;
     };
 
-type ActiveTool = "select" | "rectangle" | "ellipse";
+type ActiveTool = "select" | "rectangle" | "ellipse" | "diamond-box";
 
 type BoxLike = {
   x: number;
@@ -72,7 +72,7 @@ export default function Home() {
   const sceneRef = useRef<SceneState>(createInitialState());
   //initial tool is at ideal state
   const toolRef = useRef<ToolState>({ type: "idle" });
-  const activeToolRef = useRef<ActiveTool>("ellipse");
+  const activeToolRef = useRef<ActiveTool>("diamond-box");
 
   useEffect(() => {
     const canvas = canvasRef.current!;
@@ -95,28 +95,37 @@ export default function Home() {
     }
     loop();
 
-    function hitTest(
-      px: number,
-      py: number,
-      element: Element,
-    ) {
-      if(element.type=="rectangle") {
+    function hitTest(px: number, py: number, element: Element) {
+      if (element.type == "rectangle") {
         return (
-          px >= element.x && px <= element.x + element.width && py >= element.y && py <= element.y + element.height
+          px >= element.x &&
+          px <= element.x + element.width &&
+          py >= element.y &&
+          py <= element.y + element.height
         );
       }
-      if(element.type=="ellipse") {
-        const radiusX = element.width/2
-        const radiusY = element.height/2
-        const centerX = element.x + radiusX
-        const centerY = element.y + radiusY
-        const dx = px - centerX
-        const dy = py - centerY
+      if (element.type == "ellipse") {
+        const radiusX = element.width / 2;
+        const radiusY = element.height / 2;
+        const centerX = element.x + radiusX;
+        const centerY = element.y + radiusY;
+        const dx = px - centerX;
+        const dy = py - centerY;
         return (
           (dx * dx) / (radiusX * radiusX) + (dy * dy) / (radiusY * radiusY) <= 1
         );
       }
-      return false
+      if (element.type == "diamond-box") {
+        const centerX = element.x + element.width / 2;
+        const centerY = element.y + element.height / 2;
+        // dx and dy are the distances from the center to the point
+        // later these are ised to check how much they have consumed the diamond radius
+        const dx = Math.abs(px - centerX);
+        const dy = Math.abs(py - centerY);
+
+        return dx / (element.width / 2) + dy / (element.height / 2) <= 1;
+      }
+      return false;
     }
     function getWorldCoordinates(e: MouseEvent) {
       const rect = canvas.getBoundingClientRect();
@@ -209,7 +218,8 @@ export default function Home() {
           break;
         }
       }
-      if(!hit && activeTool === "select") sceneRef.current.selectedElementId = null
+      if (!hit && activeTool === "select")
+        sceneRef.current.selectedElementId = null;
 
       if (hit && activeTool === "select") {
         sceneRef.current.selectedElementId = hit.id;
@@ -243,7 +253,7 @@ export default function Home() {
         };
         sceneRef.current.isEditing = true;
       }
-      if(activeTool === "ellipse") {
+      if (activeTool === "ellipse") {
         sceneRef.current.selectedElementId = null;
         const id = crypto.randomUUID();
         sceneRef.current.elements.push({
@@ -255,16 +265,38 @@ export default function Home() {
           height: 0,
           fillColor: "red",
           strokeColor: "blue",
-        })
-        sceneRef.current.selectedElementId = id
+        });
+        sceneRef.current.selectedElementId = id;
         toolRef.current = {
           type: "drawing",
           startX: x,
           startY: y,
           elementId: id,
-        }
+        };
+        sceneRef.current.isEditing = true;
       }
-      sceneRef.current.isEditing = true;
+      if (activeTool === "diamond-box") {
+        sceneRef.current.selectedElementId = null;
+        const id = crypto.randomUUID();
+        sceneRef.current.elements.push({
+          id,
+          type: "diamond-box",
+          x,
+          y,
+          width: 0,
+          height: 0,
+          fillColor: "red",
+          strokeColor: "blue",
+        });
+        sceneRef.current.selectedElementId = id;
+        toolRef.current = {
+          type: "drawing",
+          startX: x,
+          startY: y,
+          elementId: id,
+        };
+        sceneRef.current.isEditing = true;
+      }
     }
     function applyResize(
       rect: BoxLike,

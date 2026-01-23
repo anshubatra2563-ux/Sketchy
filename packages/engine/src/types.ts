@@ -26,7 +26,17 @@ export type EllipseElement = {
     strokeColor: string
 }
 
-export type Element = RectangleElement | EllipseElement
+export type DiamondElement = {
+    id : string,
+    type : "diamond-box",
+    x : number,
+    y : number,
+    width : number,
+    height : number,
+    fillColor: string,
+    strokeColor: string
+}
+export type Element = RectangleElement | EllipseElement | DiamondElement
 
 export type SceneState = {
     elements : Element[],
