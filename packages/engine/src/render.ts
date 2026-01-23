@@ -35,6 +35,21 @@ function drawElement(ctx : CanvasRenderingContext2D,element : Element){
         ctx.strokeStyle = element.strokeColor;
         ctx.strokeRect(element.x, element.y, element.width, element.height);
         break;
+
+       case "ellipse":
+        const centerX = element.x + element.width / 2;
+        const centerY = element.y + element.height / 2;
+        const radiusX = Math.abs(element.width / 2);
+        const radiusY = Math.abs(element.height / 2);
+        
+        ctx.beginPath();
+        ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
+        ctx.fillStyle = element.fillColor;
+        ctx.fill();
+        ctx.strokeStyle = element.strokeColor;
+        ctx.stroke();
+        break;
+        
    }
 }
 

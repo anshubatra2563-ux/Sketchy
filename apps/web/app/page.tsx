@@ -8,6 +8,7 @@ import {
   SceneState,
   SELECTION_PADDING_PX,
   RESIZE_BOX_SIZE_PX,
+  Element
 } from "@repo/engine";
 
 const LOCALSTORAGE_KEY = "scene";
@@ -26,7 +27,7 @@ type ResizeHandle =
 type ToolState =
   | { type: "idle" }
   | {
-      type: "drawing-rectangle";
+      type: "drawing";
       startX: number;
       startY: number;
       elementId: string;
@@ -42,9 +43,17 @@ type ToolState =
       handle: ResizeHandle;
       startX: number;
       startY: number;
-      startRect: RectangleElement;
+      startRect: BoxLike;
     };
 
+type ActiveTool = "select" | "rectangle" | "ellipse";
+
+type BoxLike = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
 function loadSceneFromLocalStorage(): SceneState {
   try {
     const data = localStorage.getItem(LOCALSTORAGE_KEY);
@@ -63,6 +72,7 @@ export default function Home() {
   const sceneRef = useRef<SceneState>(createInitialState());
   //initial tool is at ideal state
   const toolRef = useRef<ToolState>({ type: "idle" });
+  const activeToolRef = useRef<ActiveTool>("ellipse");
 
   useEffect(() => {
     const canvas = canvasRef.current!;
@@ -85,14 +95,28 @@ export default function Home() {
     }
     loop();
 
-    function isPointInsideRectangle(
+    function hitTest(
       px: number,
       py: number,
-      r: { x: number; y: number; width: number; height: number },
+      element: Element,
     ) {
-      return (
-        px >= r.x && px <= r.x + r.width && py >= r.y && py <= r.y + r.height
-      );
+      if(element.type=="rectangle") {
+        return (
+          px >= element.x && px <= element.x + element.width && py >= element.y && py <= element.y + element.height
+        );
+      }
+      if(element.type=="ellipse") {
+        const radiusX = element.width/2
+        const radiusY = element.height/2
+        const centerX = element.x + radiusX
+        const centerY = element.y + radiusY
+        const dx = px - centerX
+        const dy = py - centerY
+        return (
+          (dx * dx) / (radiusX * radiusX) + (dy * dy) / (radiusY * radiusY) <= 1
+        );
+      }
+      return false
     }
     function getWorldCoordinates(e: MouseEvent) {
       const rect = canvas.getBoundingClientRect();
@@ -109,7 +133,7 @@ export default function Home() {
     function hitResizeBox(
       x: number,
       y: number,
-      rect: RectangleElement,
+      rect: BoxLike,
     ): ResizeHandle | null {
       const zoom = sceneRef.current.viewport.zoom;
       const padding = SELECTION_PADDING_PX / zoom;
@@ -152,13 +176,13 @@ export default function Home() {
 
     function onMouseDown(e: MouseEvent) {
       const { x, y } = getWorldCoordinates(e);
-
+      const activeTool = activeToolRef.current;
       const elements = sceneRef.current.elements;
       if (sceneRef.current.selectedElementId) {
         const selectedElement = elements.find(
           (el) => el.id === sceneRef.current.selectedElementId,
         );
-        if (selectedElement) {
+        if (selectedElement && activeTool === "select") {
           const handle = hitResizeBox(x, y, selectedElement);
           if (handle) {
             toolRef.current = {
@@ -180,12 +204,14 @@ export default function Home() {
       // earlier oldest elements are getting selected
       for (let i = elements.length - 1; i >= 0; i--) {
         const el = elements[i];
-        if (isPointInsideRectangle(x, y, el!)) {
+        if (hitTest(x, y, el!)) {
           hit = el;
           break;
         }
       }
-      if (hit) {
+      if(!hit && activeTool === "select") sceneRef.current.selectedElementId = null
+
+      if (hit && activeTool === "select") {
         sceneRef.current.selectedElementId = hit.id;
         toolRef.current = {
           type: "moving-element",
@@ -195,34 +221,57 @@ export default function Home() {
         sceneRef.current.isEditing = true;
         return;
       }
-
-      sceneRef.current.selectedElementId = null;
-      const id = crypto.randomUUID();
-      sceneRef.current.elements.push({
-        id,
-        type: "rectangle",
-        x,
-        y,
-        width: 0,
-        height: 0,
-        fillColor: "red",
-        strokeColor: "blue",
-      });
-      sceneRef.current.selectedElementId = id;
-      toolRef.current = {
-        type: "drawing-rectangle",
-        startX: x,
-        startY: y,
-        elementId: id,
-      };
+      if (activeTool === "rectangle") {
+        sceneRef.current.selectedElementId = null;
+        const id = crypto.randomUUID();
+        sceneRef.current.elements.push({
+          id,
+          type: "rectangle",
+          x,
+          y,
+          width: 0,
+          height: 0,
+          fillColor: "red",
+          strokeColor: "blue",
+        });
+        sceneRef.current.selectedElementId = id;
+        toolRef.current = {
+          type: "drawing",
+          startX: x,
+          startY: y,
+          elementId: id,
+        };
+        sceneRef.current.isEditing = true;
+      }
+      if(activeTool === "ellipse") {
+        sceneRef.current.selectedElementId = null;
+        const id = crypto.randomUUID();
+        sceneRef.current.elements.push({
+          id,
+          type: "ellipse",
+          x,
+          y,
+          width: 0,
+          height: 0,
+          fillColor: "red",
+          strokeColor: "blue",
+        })
+        sceneRef.current.selectedElementId = id
+        toolRef.current = {
+          type: "drawing",
+          startX: x,
+          startY: y,
+          elementId: id,
+        }
+      }
       sceneRef.current.isEditing = true;
     }
     function applyResize(
-      rect: RectangleElement,
+      rect: BoxLike,
       handle: ResizeHandle,
       dx: number,
       dy: number,
-    ): RectangleElement {
+    ): BoxLike {
       const next = { ...rect };
 
       switch (handle) {
@@ -282,9 +331,9 @@ export default function Home() {
     //for ex when left edge cross the right edge then we have to change the handle from left to right beacuse we are
     //doing the changes through the right edge
     function normalizeRectAfterResize(
-      rect: RectangleElement,
+      rect: BoxLike,
       handle: ResizeHandle,
-    ): { rect: RectangleElement; handle: ResizeHandle; flipped: boolean } {
+    ): { rect: BoxLike; handle: ResizeHandle; flipped: boolean } {
       let newHandle = handle;
       let flipped = false;
       const next = { ...rect };
@@ -364,7 +413,7 @@ export default function Home() {
         toolRef.current.lastY = y;
         return;
       }
-      if (toolRef.current.type == "drawing-rectangle") {
+      if (toolRef.current.type == "drawing") {
         const { startX, startY, elementId } = toolRef.current;
         const element = sceneRef.current.elements.find(
           (e) => e.id === elementId,
@@ -380,6 +429,9 @@ export default function Home() {
     function onMouseUp(e: MouseEvent) {
       toolRef.current = { type: "idle" };
       sceneRef.current.isEditing = false;
+      if (activeToolRef.current !== "select") {
+        activeToolRef.current = "select";
+      }
       saveSceneToLocalStorage(sceneRef.current);
     }
     function DebounceWheelSave() {
