@@ -8,6 +8,6 @@ export type Tool = {
 
 export type ToolButtonProps = {
     tool : Tool,
-    onClick : () => void,
+    onClick : (tool : ToolType) => void,
     isActive : boolean
 }
