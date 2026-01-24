@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import {
+  getElementBoundingBox,
   createInitialState,
   RectangleElement,
   renderScene,
@@ -46,7 +47,7 @@ type ToolState =
       startRect: BoxLike;
     };
 
-type ActiveTool = "select" | "rectangle" | "ellipse" | "diamond-box";
+type ActiveTool = "select" | "rectangle" | "ellipse" | "diamond-box" | "line";
 
 type BoxLike = {
   x: number;
@@ -72,7 +73,7 @@ export default function Home() {
   const sceneRef = useRef<SceneState>(createInitialState());
   //initial tool is at ideal state
   const toolRef = useRef<ToolState>({ type: "idle" });
-  const activeToolRef = useRef<ActiveTool>("diamond-box");
+  const activeToolRef = useRef<ActiveTool>("line");
 
   useEffect(() => {
     const canvas = canvasRef.current!;
@@ -125,6 +126,30 @@ export default function Home() {
 
         return dx / (element.width / 2) + dy / (element.height / 2) <= 1;
       }
+      if (element.type === "line") {
+        const x1 = element.x;
+        const y1 = element.y;
+        const x2 = element.x + element.width;
+        const y2 = element.y + element.height;
+
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const lengthSq = dx * dx + dy * dy;
+        if (lengthSq === 0) return false;
+
+        const t = ((px - x1) * dx + (py - y1) * dy) / lengthSq;
+        if (t < 0 || t > 1) return false;
+
+        const projX = x1 + t * dx;
+        const projY = y1 + t * dy;
+
+        const distSq =
+          (px - projX) * (px - projX) + (py - projY) * (py - projY);
+
+        const tolerance = 6 / sceneRef.current.viewport.zoom;
+        return distSq <= tolerance * tolerance;
+      }
+
       return false;
     }
     function getWorldCoordinates(e: MouseEvent) {
@@ -182,6 +207,21 @@ export default function Home() {
 
       return null;
     }
+    //      function getSelectionRect(el: Element): BoxLike {
+    //   if (el.type !== "line") return el
+
+    //   const x1 = el.x
+    //   const y1 = el.y
+    //   const x2 = el.x + el.width
+    //   const y2 = el.y + el.height
+
+    //   return {
+    //     x: Math.min(x1, x2),
+    //     y: Math.min(y1, y2),
+    //     width: Math.abs(x2 - x1),
+    //     height: Math.abs(y2 - y1),
+    //   }
+    // }
 
     function onMouseDown(e: MouseEvent) {
       const { x, y } = getWorldCoordinates(e);
@@ -192,7 +232,8 @@ export default function Home() {
           (el) => el.id === sceneRef.current.selectedElementId,
         );
         if (selectedElement && activeTool === "select") {
-          const handle = hitResizeBox(x, y, selectedElement);
+          const boundingBox = getElementBoundingBox(selectedElement); // ← ADD THIS
+          const handle = hitResizeBox(x, y, boundingBox);
           if (handle) {
             toolRef.current = {
               type: "resizing-element",
@@ -252,6 +293,7 @@ export default function Home() {
           elementId: id,
         };
         sceneRef.current.isEditing = true;
+        return;
       }
       if (activeTool === "ellipse") {
         sceneRef.current.selectedElementId = null;
@@ -274,6 +316,7 @@ export default function Home() {
           elementId: id,
         };
         sceneRef.current.isEditing = true;
+        return;
       }
       if (activeTool === "diamond-box") {
         sceneRef.current.selectedElementId = null;
@@ -296,6 +339,30 @@ export default function Home() {
           elementId: id,
         };
         sceneRef.current.isEditing = true;
+        return;
+      }
+      if (activeTool === "line") {
+        sceneRef.current.selectedElementId = null;
+        const id = crypto.randomUUID();
+        sceneRef.current.elements.push({
+          id,
+          type: "line",
+          x,
+          y,
+          width: 0,
+          height: 0,
+          strokeColor: "red",
+          strokeWidth: 8,
+        });
+        sceneRef.current.selectedElementId = id;
+        toolRef.current = {
+          type: "drawing",
+          startX: x,
+          startY: y,
+          elementId: id,
+        };
+        sceneRef.current.isEditing = true;
+        return;
       }
     }
     function applyResize(
@@ -394,6 +461,53 @@ export default function Home() {
 
       return { rect: next, handle: newHandle, flipped };
     }
+    function resizeLine(
+      el: any,
+      start: BoxLike,
+      handle: ResizeHandle,
+      dx: number,
+      dy: number,
+    ) {
+      let x1 = start.x;
+      let y1 = start.y;
+      let x2 = start.x + start.width;
+      let y2 = start.y + start.height;
+
+      switch (handle) {
+        case "resize-top-left-edges":
+          x1 += dx;
+          y1 += dy;
+          break;
+        case "resize-top-right-edges":
+          x2 += dx;
+          y1 += dy;
+          break;
+        case "resize-bottom-left-edges":
+          x1 += dx;
+          y2 += dy;
+          break;
+        case "resize-bottom-right-edges":
+          x2 += dx;
+          y2 += dy;
+          break;
+        case "resize-left-edge":
+          x1 += dx;
+          break;
+        case "resize-right-edge":
+          x2 += dx;
+          break;
+        case "resize-top-edge":
+          y1 += dy;
+          break;
+        case "resize-bottom-edge":
+          y2 += dy;
+          break;
+      }
+      el.x = x1;
+      el.y = y1;
+      el.width = x2 - x1;
+      el.height = y2 - y1;
+    }
 
     function onMouseMove(e: MouseEvent) {
       const { x, y } = getWorldCoordinates(e);
@@ -407,7 +521,10 @@ export default function Home() {
 
         const dx = x - startX;
         const dy = y - startY;
-
+        if (el.type === "line") {
+          resizeLine(el, startRect, handle, dx, dy);
+          return;
+        }
         const resized = applyResize(startRect, handle, dx, dy);
         const {
           rect,
@@ -451,6 +568,13 @@ export default function Home() {
           (e) => e.id === elementId,
         );
         if (!element) return;
+        if (element.type === "line") {
+          element.x = startX;
+          element.y = startY;
+          element.width = x - startX;
+          element.height = y - startY;
+          return;
+        }
         element.x = Math.min(startX, x);
         element.y = Math.min(startY, y);
         element.width = Math.abs(x - startX);

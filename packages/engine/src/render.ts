@@ -1,7 +1,31 @@
-import { SceneState, Element } from "./types";
+import { SceneState, Element, LineElement } from "./types";
 
 export const SELECTION_PADDING_PX = 8;
 export const RESIZE_BOX_SIZE_PX = 8;
+
+export function getElementBoundingBox(element: Element) {
+  if (element.type === "line") {
+    const x1 = element.x;
+    const y1 = element.y;
+    const x2 = element.x + element.width;
+    const y2 = element.y + element.height;
+
+    return {
+      x: Math.min(x1, x2),
+      y: Math.min(y1, y2),
+      width: Math.abs(element.width),
+      height: Math.abs(element.height),
+    };
+  }
+
+  // For other shapes, return as-is
+  return {
+    x: element.x,
+    y: element.y,
+    width: element.width,
+    height: element.height,
+  };
+}
 export function renderScene(
   ctx: CanvasRenderingContext2D,
   canvas: HTMLCanvasElement,
@@ -21,7 +45,8 @@ export function renderScene(
     );
     if (selectedElement) {
       // this contains the coordinates of the selection box that will be used for drawign resize boxes
-      const selectionBox = getSelectionBoxWithPadding(selectedElement, zoom);
+      const boundingBox = getElementBoundingBox(selectedElement); // ← ADD THIS LINE
+      const selectionBox = getSelectionBoxWithPadding(boundingBox, zoom);
       drawSelectionElementOutline(ctx, selectionBox, zoom);
       drawResizeBoxes(ctx, selectionBox, zoom);
     }
@@ -54,20 +79,38 @@ function drawElement(ctx: CanvasRenderingContext2D, element: Element) {
         ctx.stroke();
       }
       break;
-    case "diamond-box": {
-      const centerX = element.x + element.width / 2;
-      const centerY = element.y + element.height / 2;
-      ctx.beginPath();
-      ctx.moveTo(centerX, element.y); // TOP
-      ctx.lineTo(element.x + element.width, centerY); // RIGHT
-      ctx.lineTo(centerX, element.y + element.height); // BOTTOM
-      ctx.lineTo(element.x, centerY); // LEFT
-      ctx.closePath();
-      ctx.strokeStyle = element.strokeColor;
-      ctx.fillStyle = element.fillColor;
-      ctx.stroke();
-      ctx.fill();
-    }
+    case "diamond-box":
+      {
+        const centerX = element.x + element.width / 2;
+        const centerY = element.y + element.height / 2;
+        ctx.beginPath();
+        ctx.moveTo(centerX, element.y); // TOP
+        ctx.lineTo(element.x + element.width, centerY); // RIGHT
+        ctx.lineTo(centerX, element.y + element.height); // BOTTOM
+        ctx.lineTo(element.x, centerY); // LEFT
+        ctx.closePath();
+        ctx.strokeStyle = element.strokeColor;
+        ctx.fillStyle = element.fillColor;
+        ctx.stroke();
+        ctx.fill();
+      }
+      break;
+    case "line":
+      {
+        const x1 = element.x;
+        const y1 = element.y;
+        const x2 = element.x + element.width;
+        const y2 = element.y + element.height;
+
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.strokeStyle = element.strokeColor;
+        ctx.lineWidth = (element as LineElement).strokeWidth;
+        ctx.lineCap = "round";
+        ctx.stroke();
+      }
+      break;
   }
 }
 
