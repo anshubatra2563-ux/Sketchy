@@ -14,6 +14,7 @@ import { ResizeHandle, ToolState, BoxLike } from "./types";
 import { ToolType, Tool, ToolBar, ToolButton } from "@/components/Toolbar";
 import { MousePointer, Square, Circle, Diamond, Minus } from "lucide-react";
 import { hitTest } from "./utils/hitTest";
+import { getWorldCoordinates } from "./utils/coordinate";
 const LOCALSTORAGE_KEY = "scene";
 const WHEEL_SAVE_DELAY = 300;
 let wheelSaveTimeout: number | null = null;
@@ -72,19 +73,6 @@ export function useCanvasEngine() {
       requestAnimationFrame(loop);
     }
     loop();
-
-    
-    function getWorldCoordinates(e: MouseEvent) {
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      const { offsetX, offsetY, zoom } = sceneRef.current.viewport;
-
-      return {
-        x: x / zoom + offsetX,
-        y: y / zoom + offsetY,
-      };
-    }
 
     function hitResizeBox(
       x: number,
@@ -146,7 +134,8 @@ export function useCanvasEngine() {
     // }
 
     function onMouseDown(e: MouseEvent) {
-      const { x, y } = getWorldCoordinates(e);
+      const rect = canvas.getBoundingClientRect();
+      const { x, y } = getWorldCoordinates(e.clientX, e.clientY, rect, sceneRef.current.viewport);
       const activeTool = activeToolRef.current;
       const elements = sceneRef.current.elements;
       if (sceneRef.current.selectedElementId) {
@@ -432,7 +421,8 @@ export function useCanvasEngine() {
     }
 
     function onMouseMove(e: MouseEvent) {
-      const { x, y } = getWorldCoordinates(e);
+      const rect = canvas.getBoundingClientRect();
+      const { x, y } = getWorldCoordinates(e.clientX, e.clientY, rect, sceneRef.current.viewport);
 
       if (toolRef.current.type === "resizing-element") {
         const { elementId, handle, startRect, startX, startY } =
