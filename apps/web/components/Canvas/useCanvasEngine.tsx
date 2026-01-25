@@ -1,6 +1,5 @@
 "use client";
-import { useState } from "react";
-import { useEffect, useRef } from "react";
+import { useState,useEffect, useRef } from "react";
 import {
   getElementBoundingBox,
   createInitialState,
@@ -15,6 +14,7 @@ import { ToolType, Tool, ToolBar, ToolButton } from "@/components/Toolbar";
 import { MousePointer, Square, Circle, Diamond, Minus } from "lucide-react";
 import { hitTest } from "./utils/hitTest";
 import { getWorldCoordinates } from "./utils/coordinate";
+import { applyResize } from "./utils/resize";
 const LOCALSTORAGE_KEY = "scene";
 const WHEEL_SAVE_DELAY = 300;
 let wheelSaveTimeout: number | null = null;
@@ -276,60 +276,7 @@ export function useCanvasEngine() {
         return;
       }
     }
-    function applyResize(
-      rect: BoxLike,
-      handle: ResizeHandle,
-      dx: number,
-      dy: number,
-    ): BoxLike {
-      const next = { ...rect };
-
-      switch (handle) {
-        case "resize-right-edge":
-          next.width += dx;
-          break;
-
-        case "resize-left-edge":
-          next.x += dx;
-          next.width -= dx;
-          break;
-
-        case "resize-bottom-edge":
-          next.height += dy;
-          break;
-
-        case "resize-top-edge":
-          next.y += dy;
-          next.height -= dy;
-          break;
-
-        case "resize-top-left-edges":
-          next.x += dx;
-          next.width -= dx;
-          next.y += dy;
-          next.height -= dy;
-          break;
-
-        case "resize-top-right-edges":
-          next.width += dx;
-          next.y += dy;
-          next.height -= dy;
-          break;
-
-        case "resize-bottom-right-edges":
-          next.width += dx;
-          next.height += dy;
-          break;
-
-        case "resize-bottom-left-edges":
-          next.x += dx;
-          next.width -= dx;
-          next.height += dy;
-          break;
-      }
-
-      return next;
-    }
+    
 
     // these comments are for my understanding
     // i am using this function so that if width or height becomes negative then
