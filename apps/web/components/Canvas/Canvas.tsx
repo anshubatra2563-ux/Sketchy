@@ -560,8 +560,8 @@ export function Canvas() {
       toolRef.current = { type: "idle" };
       sceneRef.current.isEditing = false;
       if (activeToolRef.current !== "select") {
-        activeToolRef.current = "select";
-      }
+        setActive("select"); 
+    }
       saveSceneToLocalStorage(sceneRef.current);
     }
     function DebounceWheelSave() {
