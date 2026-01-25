@@ -14,7 +14,7 @@ import { ToolType, Tool, ToolBar, ToolButton } from "@/components/Toolbar";
 import { MousePointer, Square, Circle, Diamond, Minus } from "lucide-react";
 import { hitTest } from "./utils/hitTest";
 import { getWorldCoordinates } from "./utils/coordinate";
-import { applyResize } from "./utils/resize";
+import { applyResize, normalizeRectAfterResize, resizeLine } from "./utils/resize";
 const LOCALSTORAGE_KEY = "scene";
 const WHEEL_SAVE_DELAY = 300;
 let wheelSaveTimeout: number | null = null;
@@ -287,85 +287,8 @@ export function useCanvasEngine() {
     // and also we are changing the direction of the handle basically changes the handle which you are moving
     //for ex when left edge cross the right edge then we have to change the handle from left to right beacuse we are
     //doing the changes through the right edge
-    function normalizeRectAfterResize(
-      rect: BoxLike,
-      handle: ResizeHandle,
-    ): { rect: BoxLike; handle: ResizeHandle; flipped: boolean } {
-      let newHandle = handle;
-      let flipped = false;
-      const next = { ...rect };
-
-      if (next.width < 0) {
-        next.x += next.width;
-        next.width = Math.abs(next.width);
-        flipped = true;
-
-        if (handle.includes("left"))
-          newHandle = handle.replace("left", "right") as ResizeHandle;
-        else if (handle.includes("right"))
-          newHandle = handle.replace("right", "left") as ResizeHandle;
-      }
-
-      if (next.height < 0) {
-        next.y += next.height;
-        next.height = Math.abs(next.height);
-        flipped = true;
-
-        if (handle.includes("top"))
-          newHandle = handle.replace("top", "bottom") as ResizeHandle;
-        else if (handle.includes("bottom"))
-          newHandle = handle.replace("bottom", "top") as ResizeHandle;
-      }
-
-      return { rect: next, handle: newHandle, flipped };
-    }
-    function resizeLine(
-      el: any,
-      start: BoxLike,
-      handle: ResizeHandle,
-      dx: number,
-      dy: number,
-    ) {
-      let x1 = start.x;
-      let y1 = start.y;
-      let x2 = start.x + start.width;
-      let y2 = start.y + start.height;
-
-      switch (handle) {
-        case "resize-top-left-edges":
-          x1 += dx;
-          y1 += dy;
-          break;
-        case "resize-top-right-edges":
-          x2 += dx;
-          y1 += dy;
-          break;
-        case "resize-bottom-left-edges":
-          x1 += dx;
-          y2 += dy;
-          break;
-        case "resize-bottom-right-edges":
-          x2 += dx;
-          y2 += dy;
-          break;
-        case "resize-left-edge":
-          x1 += dx;
-          break;
-        case "resize-right-edge":
-          x2 += dx;
-          break;
-        case "resize-top-edge":
-          y1 += dy;
-          break;
-        case "resize-bottom-edge":
-          y2 += dy;
-          break;
-      }
-      el.x = x1;
-      el.y = y1;
-      el.width = x2 - x1;
-      el.height = y2 - y1;
-    }
+    
+    
 
     function onMouseMove(e: MouseEvent) {
       const rect = canvas.getBoundingClientRect();
