@@ -13,6 +13,7 @@ import {
 import { ResizeHandle, ToolState, BoxLike } from "./types";
 import { ToolType, Tool, ToolBar, ToolButton } from "@/components/Toolbar";
 import { MousePointer, Square, Circle, Diamond, Minus } from "lucide-react";
+import { hitTest } from "./utils/hitTest";
 const LOCALSTORAGE_KEY = "scene";
 const WHEEL_SAVE_DELAY = 300;
 let wheelSaveTimeout: number | null = null;
@@ -72,62 +73,7 @@ export function useCanvasEngine() {
     }
     loop();
 
-    function hitTest(px: number, py: number, element: Element) {
-      if (element.type == "rectangle") {
-        return (
-          px >= element.x &&
-          px <= element.x + element.width &&
-          py >= element.y &&
-          py <= element.y + element.height
-        );
-      }
-      if (element.type == "ellipse") {
-        const radiusX = element.width / 2;
-        const radiusY = element.height / 2;
-        const centerX = element.x + radiusX;
-        const centerY = element.y + radiusY;
-        const dx = px - centerX;
-        const dy = py - centerY;
-        return (
-          (dx * dx) / (radiusX * radiusX) + (dy * dy) / (radiusY * radiusY) <= 1
-        );
-      }
-      if (element.type == "diamond-box") {
-        const centerX = element.x + element.width / 2;
-        const centerY = element.y + element.height / 2;
-        // dx and dy are the distances from the center to the point
-        // later these are ised to check how much they have consumed the diamond radius
-        const dx = Math.abs(px - centerX);
-        const dy = Math.abs(py - centerY);
-
-        return dx / (element.width / 2) + dy / (element.height / 2) <= 1;
-      }
-      if (element.type === "line") {
-        const x1 = element.x;
-        const y1 = element.y;
-        const x2 = element.x + element.width;
-        const y2 = element.y + element.height;
-
-        const dx = x2 - x1;
-        const dy = y2 - y1;
-        const lengthSq = dx * dx + dy * dy;
-        if (lengthSq === 0) return false;
-
-        const t = ((px - x1) * dx + (py - y1) * dy) / lengthSq;
-        if (t < 0 || t > 1) return false;
-
-        const projX = x1 + t * dx;
-        const projY = y1 + t * dy;
-
-        const distSq =
-          (px - projX) * (px - projX) + (py - projY) * (py - projY);
-
-        const tolerance = 6 / sceneRef.current.viewport.zoom;
-        return distSq <= tolerance * tolerance;
-      }
-
-      return false;
-    }
+    
     function getWorldCoordinates(e: MouseEvent) {
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
@@ -230,7 +176,7 @@ export function useCanvasEngine() {
       // earlier oldest elements are getting selected
       for (let i = elements.length - 1; i >= 0; i--) {
         const el = elements[i];
-        if (hitTest(x, y, el!)) {
+        if (hitTest(x, y, el!, sceneRef.current.viewport.zoom)) {
           hit = el;
           break;
         }
