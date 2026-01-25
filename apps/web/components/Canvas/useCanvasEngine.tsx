@@ -16,6 +16,7 @@ import { hitTest } from "./utils/hitTest";
 import { getWorldCoordinates } from "./utils/coordinate";
 import { applyResize, normalizeRectAfterResize, resizeLine } from "./utils/resize";
 import { hitResizeBox } from "./utils/hitResize";
+import { createElement } from "./utils/createElement";
 const LOCALSTORAGE_KEY = "scene";
 const WHEEL_SAVE_DELAY = 300;
 let wheelSaveTimeout: number | null = null;
@@ -143,92 +144,56 @@ export function useCanvasEngine() {
       }
       if (activeToolRef.current === "rectangle") {
         sceneRef.current.selectedElementId = null;
-        const id = crypto.randomUUID();
-        sceneRef.current.elements.push({
-          id,
-          type: "rectangle",
-          x,
-          y,
-          width: 0,
-          height: 0,
-          fillColor: "red",
-          strokeColor: "blue",
-        });
-        sceneRef.current.selectedElementId = id;
+        const element = createElement("rectangle",x,y)
+        sceneRef.current.elements.push(element);
+        sceneRef.current.selectedElementId = element.id;
         toolRef.current = {
           type: "drawing",
           startX: x,
           startY: y,
-          elementId: id,
+          elementId: element.id,
         };
         sceneRef.current.isEditing = true;
         return;
       }
       if (activeToolRef.current === "ellipse") {
         sceneRef.current.selectedElementId = null;
-        const id = crypto.randomUUID();
-        sceneRef.current.elements.push({
-          id,
-          type: "ellipse",
-          x,
-          y,
-          width: 0,
-          height: 0,
-          fillColor: "red",
-          strokeColor: "blue",
-        });
-        sceneRef.current.selectedElementId = id;
+        const element = createElement("ellipse",x,y)
+        sceneRef.current.elements.push(element);
+        sceneRef.current.selectedElementId = element.id;
         toolRef.current = {
           type: "drawing",
           startX: x,
           startY: y,
-          elementId: id,
+          elementId: element.id,
         };
         sceneRef.current.isEditing = true;
         return;
       }
       if (activeToolRef.current === "diamond-box") {
         sceneRef.current.selectedElementId = null;
-        const id = crypto.randomUUID();
-        sceneRef.current.elements.push({
-          id,
-          type: "diamond-box",
-          x,
-          y,
-          width: 0,
-          height: 0,
-          fillColor: "red",
-          strokeColor: "blue",
-        });
-        sceneRef.current.selectedElementId = id;
+        const element = createElement("diamond-box",x,y)
+        sceneRef.current.elements.push(element);
+        sceneRef.current.selectedElementId = element.id;
         toolRef.current = {
           type: "drawing",
           startX: x,
           startY: y,
-          elementId: id,
+          elementId: element.id,
         };
         sceneRef.current.isEditing = true;
         return;
       }
       if (activeToolRef.current === "line") {
         sceneRef.current.selectedElementId = null;
-        const id = crypto.randomUUID();
-        sceneRef.current.elements.push({
-          id,
-          type: "line",
-          x,
-          y,
-          width: 0,
-          height: 0,
-          strokeColor: "red",
-          strokeWidth: 8,
-        });
-        sceneRef.current.selectedElementId = id;
+        const element = createElement("line",x,y)
+        sceneRef.current.elements.push(element);
+        sceneRef.current.selectedElementId = element.id;
         toolRef.current = {
           type: "drawing",
           startX: x,
           startY: y,
-          elementId: id,
+          elementId: element.id,
         };
         sceneRef.current.isEditing = true;
         return;
