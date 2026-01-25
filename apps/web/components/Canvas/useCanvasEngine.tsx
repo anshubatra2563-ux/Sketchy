@@ -15,6 +15,7 @@ import { MousePointer, Square, Circle, Diamond, Minus } from "lucide-react";
 import { hitTest } from "./utils/hitTest";
 import { getWorldCoordinates } from "./utils/coordinate";
 import { applyResize, normalizeRectAfterResize, resizeLine } from "./utils/resize";
+import { hitResizeBox } from "./utils/hitResize";
 const LOCALSTORAGE_KEY = "scene";
 const WHEEL_SAVE_DELAY = 300;
 let wheelSaveTimeout: number | null = null;
@@ -74,49 +75,6 @@ export function useCanvasEngine() {
     }
     loop();
 
-    function hitResizeBox(
-      x: number,
-      y: number,
-      rect: BoxLike,
-    ): ResizeHandle | null {
-      const zoom = sceneRef.current.viewport.zoom;
-      const padding = SELECTION_PADDING_PX / zoom;
-      const size = RESIZE_BOX_SIZE_PX / zoom;
-      const half = size / 2;
-
-      const left = rect.x - padding;
-      const right = rect.x + rect.width + padding;
-      const top = rect.y - padding;
-      const bottom = rect.y + rect.height + padding;
-      const centerX = (left + right) / 2;
-      const centerY = (top + bottom) / 2;
-
-      const handles = [
-        { name: "resize-top-left-edges", x: left, y: top },
-        { name: "resize-top-edge", x: centerX, y: top },
-        { name: "resize-top-right-edges", x: right, y: top },
-
-        { name: "resize-left-edge", x: left, y: centerY },
-        { name: "resize-right-edge", x: right, y: centerY },
-
-        { name: "resize-bottom-left-edges", x: left, y: bottom },
-        { name: "resize-bottom-edge", x: centerX, y: bottom },
-        { name: "resize-bottom-right-edges", x: right, y: bottom },
-      ] as const;
-
-      for (const handle of handles) {
-        if (
-          x >= handle.x - half &&
-          x <= handle.x + half &&
-          y >= handle.y - half &&
-          y <= handle.y + half
-        ) {
-          return handle.name;
-        }
-      }
-
-      return null;
-    }
     //      function getSelectionRect(el: Element): BoxLike {
     //   if (el.type !== "line") return el
 
@@ -144,7 +102,7 @@ export function useCanvasEngine() {
         );
         if (selectedElement && activeToolRef.current === "select") {
           const boundingBox = getElementBoundingBox(selectedElement);
-          const handle = hitResizeBox(x, y, boundingBox);
+          const handle = hitResizeBox(x, y, boundingBox, sceneRef.current.viewport.zoom);
           if (handle) {
             toolRef.current = {
               type: "resizing-element",
