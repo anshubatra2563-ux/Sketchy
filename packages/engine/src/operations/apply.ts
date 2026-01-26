@@ -20,7 +20,7 @@ export function applyOperation(scene: SceneState, operation: Operation) {
       return;
     case "resize": {
       const element = scene.elements.find((el) => el.id === operation.elementId);
-      if (!element) return scene;
+      if (!element) return;
       element.x = operation.rect.x;
       element.y = operation.rect.y;
       element.width = operation.rect.width;
