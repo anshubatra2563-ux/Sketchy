@@ -94,7 +94,7 @@ export function resizeLine(
   handle: ResizeHandle,
   dx: number,
   dy: number,
-) {
+): BoxLike {
   let x1 = start.x;
   let y1 = start.y;
   let x2 = start.x + start.width;
@@ -130,8 +130,10 @@ export function resizeLine(
       y2 += dy;
       break;
   }
-  el.x = x1;
-  el.y = y1;
-  el.width = x2 - x1;
-  el.height = y2 - y1;
+  return {
+    x: x1,
+    y: y1,
+    width: x2 - x1,
+    height: y2 - y1,
+  };
 }

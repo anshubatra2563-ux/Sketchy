@@ -1,5 +1,5 @@
 "use client";
-import { useState,useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   getElementBoundingBox,
   createInitialState,
@@ -9,14 +9,18 @@ import {
   RESIZE_BOX_SIZE_PX,
   Element,
   applyOperation,
-  Operation
+  Operation,
 } from "@repo/engine";
 import { ResizeHandle, ToolState, BoxLike } from "./types";
 import { ToolType, Tool, ToolBar, ToolButton } from "@/components/Toolbar";
 import { MousePointer, Square, Circle, Diamond, Minus } from "lucide-react";
 import { hitTest } from "./utils/hitTest";
 import { getWorldCoordinates } from "./utils/coordinate";
-import { applyResize, normalizeRectAfterResize, resizeLine } from "./utils/resize";
+import {
+  applyResize,
+  normalizeRectAfterResize,
+  resizeLine,
+} from "./utils/resize";
 import { hitResizeBox } from "./utils/hitResize";
 import { createElement } from "./utils/createElement";
 const LOCALSTORAGE_KEY = "scene";
@@ -44,7 +48,7 @@ export function useCanvasEngine() {
   const toolRef = useRef<ToolState>({ type: "idle" });
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const sceneRef = useRef<SceneState>(createInitialState());
-    
+
   const tools: Tool[] = [
     { id: "select", label: "select", icon: <MousePointer /> },
     { id: "rectangle", label: "rectangle", icon: <Square /> },
@@ -54,10 +58,10 @@ export function useCanvasEngine() {
   ];
 
   useEffect(() => {
-      activeToolRef.current = active;
-    }, [active]);
+    activeToolRef.current = active;
+  }, [active]);
 
-    useEffect(() => {
+  useEffect(() => {
     const canvas = canvasRef.current!;
     const ctx = canvas.getContext("2d");
 
@@ -96,7 +100,12 @@ export function useCanvasEngine() {
 
     function onMouseDown(e: MouseEvent) {
       const rect = canvas.getBoundingClientRect();
-      const { x, y } = getWorldCoordinates(e.clientX, e.clientY, rect, sceneRef.current.viewport);
+      const { x, y } = getWorldCoordinates(
+        e.clientX,
+        e.clientY,
+        rect,
+        sceneRef.current.viewport,
+      );
       const activeTool = activeToolRef.current;
       const elements = sceneRef.current.elements;
       if (sceneRef.current.selectedElementId) {
@@ -105,7 +114,12 @@ export function useCanvasEngine() {
         );
         if (selectedElement && activeToolRef.current === "select") {
           const boundingBox = getElementBoundingBox(selectedElement);
-          const handle = hitResizeBox(x, y, boundingBox, sceneRef.current.viewport.zoom);
+          const handle = hitResizeBox(
+            x,
+            y,
+            boundingBox,
+            sceneRef.current.viewport.zoom,
+          );
           if (handle) {
             toolRef.current = {
               type: "resizing-element",
@@ -146,7 +160,7 @@ export function useCanvasEngine() {
       }
       if (activeToolRef.current === "rectangle") {
         sceneRef.current.selectedElementId = null;
-        const element = createElement("rectangle",x,y)
+        const element = createElement("rectangle", x, y);
         sceneRef.current.elements.push(element);
         sceneRef.current.selectedElementId = element.id;
         toolRef.current = {
@@ -160,7 +174,7 @@ export function useCanvasEngine() {
       }
       if (activeToolRef.current === "ellipse") {
         sceneRef.current.selectedElementId = null;
-        const element = createElement("ellipse",x,y)
+        const element = createElement("ellipse", x, y);
         sceneRef.current.elements.push(element);
         sceneRef.current.selectedElementId = element.id;
         toolRef.current = {
@@ -174,7 +188,7 @@ export function useCanvasEngine() {
       }
       if (activeToolRef.current === "diamond-box") {
         sceneRef.current.selectedElementId = null;
-        const element = createElement("diamond-box",x,y)
+        const element = createElement("diamond-box", x, y);
         sceneRef.current.elements.push(element);
         sceneRef.current.selectedElementId = element.id;
         toolRef.current = {
@@ -188,7 +202,7 @@ export function useCanvasEngine() {
       }
       if (activeToolRef.current === "line") {
         sceneRef.current.selectedElementId = null;
-        const element = createElement("line",x,y)
+        const element = createElement("line", x, y);
         sceneRef.current.elements.push(element);
         sceneRef.current.selectedElementId = element.id;
         toolRef.current = {
@@ -201,7 +215,6 @@ export function useCanvasEngine() {
         return;
       }
     }
-    
 
     // these comments are for my understanding
     // i am using this function so that if width or height becomes negative then
@@ -212,12 +225,15 @@ export function useCanvasEngine() {
     // and also we are changing the direction of the handle basically changes the handle which you are moving
     //for ex when left edge cross the right edge then we have to change the handle from left to right beacuse we are
     //doing the changes through the right edge
-    
-    
 
     function onMouseMove(e: MouseEvent) {
       const rect = canvas.getBoundingClientRect();
-      const { x, y } = getWorldCoordinates(e.clientX, e.clientY, rect, sceneRef.current.viewport);
+      const { x, y } = getWorldCoordinates(
+        e.clientX,
+        e.clientY,
+        rect,
+        sceneRef.current.viewport,
+      );
 
       if (toolRef.current.type === "resizing-element") {
         const { elementId, handle, startRect, startX, startY } =
@@ -229,7 +245,15 @@ export function useCanvasEngine() {
         const dx = x - startX;
         const dy = y - startY;
         if (el.type === "line") {
-          resizeLine(el, startRect, handle, dx, dy);
+          const rect = resizeLine(el, startRect, handle, dx, dy);
+          const op: Operation = {
+            type: "resize",
+            opId: crypto.randomUUID(),
+            timestamp: Date.now(),
+            elementId,
+            rect,
+          }
+          applyOperation(sceneRef.current, op);
           return;
         }
         const resized = applyResize(startRect, handle, dx, dy);
@@ -239,7 +263,15 @@ export function useCanvasEngine() {
           flipped,
         } = normalizeRectAfterResize(resized, handle);
 
-        Object.assign(el, rect);
+        const op: Operation = {
+          type: "resize",
+          opId: crypto.randomUUID(),
+          timestamp: Date.now(),
+          elementId,
+          rect,
+        };
+
+        applyOperation(sceneRef.current, op);
 
         if (flipped) {
           toolRef.current = {
@@ -259,16 +291,16 @@ export function useCanvasEngine() {
         const dx = x - lastX;
         const dy = y - lastY;
         const elementId = sceneRef.current.selectedElementId;
-        if(!elementId) return;
-        const op : Operation = {
-          type : "move",
+        if (!elementId) return;
+        const op: Operation = {
+          type: "move",
           opId: crypto.randomUUID(),
           timestamp: Date.now(),
           elementId,
           dx,
-          dy
-        }
-        applyOperation(sceneRef.current,op);
+          dy,
+        };
+        applyOperation(sceneRef.current, op);
         toolRef.current.lastX = x;
         toolRef.current.lastY = y;
         return;
@@ -297,8 +329,8 @@ export function useCanvasEngine() {
       toolRef.current = { type: "idle" };
       sceneRef.current.isEditing = false;
       if (activeToolRef.current !== "select") {
-        setActive("select"); 
-    }
+        setActive("select");
+      }
       saveSceneToLocalStorage(sceneRef.current);
     }
     function DebounceWheelSave() {
@@ -370,10 +402,10 @@ export function useCanvasEngine() {
       canvas.removeEventListener("wheel", onMouseWheel);
     };
   }, []);
-    return {
-  canvasRef,
-  tools,
-  active,
-  setActive,
-}
+  return {
+    canvasRef,
+    tools,
+    active,
+    setActive,
+  };
 }
