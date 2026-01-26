@@ -8,6 +8,8 @@ import {
   SELECTION_PADDING_PX,
   RESIZE_BOX_SIZE_PX,
   Element,
+  applyOperation,
+  Operation
 } from "@repo/engine";
 import { ResizeHandle, ToolState, BoxLike } from "./types";
 import { ToolType, Tool, ToolBar, ToolButton } from "@/components/Toolbar";
@@ -256,13 +258,17 @@ export function useCanvasEngine() {
         const { lastX, lastY } = toolRef.current;
         const dx = x - lastX;
         const dy = y - lastY;
-        const el = sceneRef.current.elements.find(
-          (el) => el.id === sceneRef.current.selectedElementId,
-        );
-        if (el) {
-          el.x += dx;
-          el.y += dy;
+        const elementId = sceneRef.current.selectedElementId;
+        if(!elementId) return;
+        const op : Operation = {
+          type : "move",
+          opId: crypto.randomUUID(),
+          timestamp: Date.now(),
+          elementId,
+          dx,
+          dy
         }
+        applyOperation(sceneRef.current,op);
         toolRef.current.lastX = x;
         toolRef.current.lastY = y;
         return;
