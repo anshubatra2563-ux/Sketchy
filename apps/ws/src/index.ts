@@ -1,19 +1,19 @@
 import { WebSocketServer } from "ws"
-
+import { joinRoom } from "./room.js"
 const PORT = 8080
 const wss = new WebSocketServer({ port: PORT })
+console.log("Websocket server is running on port", PORT)
 
 wss.on("connection", (socket) => {
-    console.log("Websocket server is running on port", PORT)
-
     socket.on("message", (data) => {
-        const message = data.toString()
+        const message = JSON.parse(data.toString()) 
         console.log("Received message:", message)
-
-        socket.send(JSON.stringify({
-            type : "echo",
-            payload : message
-        }))
+        
+        if(message.type === "join") {
+            console.log("Joining room", message.roomId)
+            joinRoom(message.roomId,socket)
+            
+        }
     })
 
     socket.on("close", () => {
