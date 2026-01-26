@@ -2,7 +2,8 @@ import { Element } from "../types";
 
 export type BaseOperation = {
     opId : string,
-    timestamp : number
+    timestamp : number,
+    elementId : string
 }
 
 export type CreateElementOp = BaseOperation & { 
@@ -12,7 +13,6 @@ export type CreateElementOp = BaseOperation & {
 
 export type MoveElementOp = BaseOperation & {
     type : "move",
-    elementId : string,
     dx : number,
     dy : number
 }

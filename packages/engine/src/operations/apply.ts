@@ -2,16 +2,19 @@ import { SceneState } from "../types";
 import { Operation } from "./types";
 
 
-export function applyOperation(scene: SceneState, operation: Operation) {
+export function applyOperation(scene: SceneState, operation: Operation) : SceneState {
     switch (operation.type) {
         case "create":
             scene.elements.push(operation.element);
-            return;
+            return scene;
         case "move":
             const element = scene.elements.find((el) => el.id === operation.elementId);
-            if(!element) return;
+            if(!element) return scene;
             element.x += operation.dx;
             element.y += operation.dy;
-            return;
+            return scene;
+        default: {
+            return scene;
+        }
     }
 }
