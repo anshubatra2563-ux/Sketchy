@@ -89,7 +89,6 @@ export function normalizeRectAfterResize(
 }
 
 export function resizeLine(
-  el: any,
   start: BoxLike,
   handle: ResizeHandle,
   dx: number,

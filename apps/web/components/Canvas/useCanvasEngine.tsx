@@ -245,14 +245,14 @@ export function useCanvasEngine() {
         const dx = x - startX;
         const dy = y - startY;
         if (el.type === "line") {
-          const rect = resizeLine(el, startRect, handle, dx, dy);
+          const rect = resizeLine(startRect, handle, dx, dy);
           const op: Operation = {
             type: "resize",
             opId: crypto.randomUUID(),
             timestamp: Date.now(),
             elementId,
             rect,
-          }
+          };
           applyOperation(sceneRef.current, op);
           return;
         }
@@ -326,6 +326,24 @@ export function useCanvasEngine() {
     }
 
     function onMouseUp(e: MouseEvent) {
+      const tool = toolRef.current;
+      if (tool.type === "drawing") {
+        const element = sceneRef.current.elements.find(
+          (el) => el.id === tool.elementId,
+        );
+        if (element) {
+          const op: Operation = {
+            type: "create",
+            opId: crypto.randomUUID(),
+            timestamp: Date.now(),
+            element,
+          };
+          function sendOperation(op: Operation) {
+            console.log("SEND OP →", op);
+          }
+          sendOperation(op);
+        }
+      }
       toolRef.current = { type: "idle" };
       sceneRef.current.isEditing = false;
       if (activeToolRef.current !== "select") {
