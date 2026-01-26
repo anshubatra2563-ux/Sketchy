@@ -17,5 +17,15 @@ export type MoveElementOp = BaseOperation & {
     dy : number
 }
 
-export type Operation = CreateElementOp | MoveElementOp
+export type ResizeElementOp = BaseOperation & {
+    type : "resize",
+    rect : {
+        x : number,
+        y : number,
+        width : number,
+        height : number
+    }
+}
+
+export type Operation = CreateElementOp | MoveElementOp | ResizeElementOp
 
