@@ -17,3 +17,16 @@ export function joinRoom(roomId:RoomId,socket:WebSocket) {
     console.log(roomId)
     console.log(`socket joined room ${roomId} Total users:${room.size}`)
 }
+
+
+export function BroadcastToRoom(sender:WebSocket,message:any) {
+   const roomId = socketToRoom.get(sender)
+   if(!roomId) return;
+
+   const room  = rooms.get(roomId)
+   for(const socket of room!) {
+    if(socket !== sender) {
+        socket.send(JSON.stringify(message))
+    }
+   }    
+}

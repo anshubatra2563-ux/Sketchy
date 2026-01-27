@@ -1,5 +1,5 @@
 import { WebSocketServer } from "ws"
-import { joinRoom } from "./room.js"
+import { joinRoom,BroadcastToRoom } from "./room.js"
 const PORT = 8080
 const wss = new WebSocketServer({ port: PORT })
 console.log("Websocket server is running on port", PORT)
@@ -12,8 +12,10 @@ wss.on("connection", (socket) => {
         if(message.type === "join") {
             console.log("Joining room", message.roomId)
             joinRoom(message.roomId,socket)
-            
+            return
         }
+
+        BroadcastToRoom(socket,message)
     })
 
     socket.on("close", () => {
