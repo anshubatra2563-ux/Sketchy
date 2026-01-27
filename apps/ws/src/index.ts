@@ -1,5 +1,5 @@
 import { WebSocketServer } from "ws"
-import { joinRoom,BroadcastToRoom } from "./room.js"
+import { joinRoom,BroadcastToRoom,LeaveRoom } from "./room.js"
 const PORT = 8080
 const wss = new WebSocketServer({ port: PORT })
 console.log("Websocket server is running on port", PORT)
@@ -19,6 +19,7 @@ wss.on("connection", (socket) => {
     })
 
     socket.on("close", () => {
+        LeaveRoom(socket)
         console.log("Client disconnected")
     })
     

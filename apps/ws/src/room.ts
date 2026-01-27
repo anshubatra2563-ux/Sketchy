@@ -30,3 +30,18 @@ export function BroadcastToRoom(sender:WebSocket,message:any) {
     }
    }    
 }
+
+export function LeaveRoom(socket:WebSocket) {
+    const roomId = socketToRoom.get(socket)
+    if(!roomId) return;
+
+    const room = rooms.get(roomId)
+    if(!room) return;
+    
+    room.delete(socket)
+    socketToRoom.delete(socket)
+
+    if(room.size === 0) {
+        rooms.delete(roomId)
+    }
+}
