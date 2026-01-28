@@ -28,3 +28,19 @@ export function sendMessage(message: any) {
         { once: true }
     );
 }
+
+export function joinRoom(roomId: string) {
+    sendMessage({ type: "joinRoom", roomId });
+}
+
+export function onMessage(handler: (message: any) => void) {
+    const ws = connect()
+    ws.addEventListener("message", (event) => {
+        try {
+            const data = JSON.parse(event.data)
+            handler(data)
+        } catch (e) {
+            console.error("invalid mesage", e);
+        }
+    });
+}
