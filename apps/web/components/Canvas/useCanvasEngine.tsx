@@ -23,6 +23,8 @@ import {
 } from "./utils/resize";
 import { hitResizeBox } from "./utils/hitResize";
 import { createElement } from "./utils/createElement";
+import { joinRoom, onMessage } from "@/lib/wsClient";
+import { join } from "path";
 const LOCALSTORAGE_KEY = "scene";
 const WHEEL_SAVE_DELAY = 300;
 let wheelSaveTimeout: number | null = null;
@@ -41,7 +43,7 @@ function saveSceneToLocalStorage(scene: SceneState) {
   localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(scene));
 }
 
-export function useCanvasEngine() {
+export function useCanvasEngine(roomId? : string) {
   const [active, setActive] = useState<ToolType>("select"); // UI state
   const activeToolRef = useRef<ToolType>("select");
   //initial tool is at ideal state
@@ -56,6 +58,26 @@ export function useCanvasEngine() {
     { id: "diamond-box", label: "diamond-box", icon: <Diamond /> },
     { id: "line", label: "line", icon: <Minus /> },
   ];
+
+  useEffect(() => {
+    if (!roomId) {
+      return
+    }
+    joinRoom(roomId);
+
+    function handleIncomingMessage(message: any) {
+      if(
+        message.type === "create" ||
+        message.type === "move" ||
+        message.type === "resize"
+      ) {
+        applyOperation(sceneRef.current, message);
+      }
+    }
+    onMessage(handleIncomingMessage)
+  }, [roomId]);
+
+
 
   useEffect(() => {
     activeToolRef.current = active;
