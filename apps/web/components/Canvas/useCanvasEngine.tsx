@@ -290,6 +290,7 @@ useEffect(() => {
             rect,
           };
           applyOperation(sceneRef.current, op);
+          sendMessage(op);
           return;
         }
         const resized = applyResize(startRect, handle, dx, dy);
