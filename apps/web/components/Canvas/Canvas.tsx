@@ -2,9 +2,9 @@
 
 import { ToolBar, ToolButton } from "@/components/Toolbar"
 import { useCanvasEngine } from "./useCanvasEngine"
-export function Canvas() {
+export function Canvas({ roomId }: { roomId?: string }) {
   
-  const { canvasRef , tools , active , setActive } = useCanvasEngine();
+  const { canvasRef , tools , active , setActive } = useCanvasEngine(roomId);
   return (
     <div className="relative">
       <ToolBar className="absolute">

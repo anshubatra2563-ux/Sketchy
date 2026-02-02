@@ -23,8 +23,7 @@ import {
 } from "./utils/resize";
 import { hitResizeBox } from "./utils/hitResize";
 import { createElement } from "./utils/createElement";
-import { joinRoom, onMessage } from "@/lib/wsClient";
-import { join } from "path";
+import { joinRoom, onMessage, sendMessage } from "@/lib/wsClient";
 const LOCALSTORAGE_KEY = "scene";
 const WHEEL_SAVE_DELAY = 300;
 let wheelSaveTimeout: number | null = null;
@@ -59,23 +58,38 @@ export function useCanvasEngine(roomId? : string) {
     { id: "line", label: "line", icon: <Minus /> },
   ];
 
-  useEffect(() => {
-    if (!roomId) {
-      return
-    }
-    joinRoom(roomId);
+useEffect(() => {
+  if (!roomId) {
+    return;
+  }
+  console.log("🔌 Joining room:", roomId);
+  joinRoom(roomId);
 
-    function handleIncomingMessage(message: any) {
-      if(
-        message.type === "create" ||
-        message.type === "move" ||
-        message.type === "resize"
-      ) {
-        applyOperation(sceneRef.current, message);
-      }
+  function handleIncomingMessage(message: any) {
+  console.log("RECEIVED:", message);
+  
+  if (message.type === "create") {
+    const exists = sceneRef.current.elements.find(
+      (el) => el.id === message.element.id
+    );
+    if (!exists) {
+      applyOperation(sceneRef.current, message);
+      console.log("Created element from remote");
+    } else {
+      console.log("Element already exists, skipping");
     }
-    onMessage(handleIncomingMessage)
-  }, [roomId]);
+  }
+  if (message.type === "move" || message.type === "resize") {
+    applyOperation(sceneRef.current, message);
+    console.log("Applied", message.type);
+  }
+}
+  
+  onMessage(handleIncomingMessage);
+  return () => {
+    console.log("Component unmounting, room:", roomId);
+  };
+}, [roomId]);
 
 
 
@@ -294,6 +308,7 @@ export function useCanvasEngine(roomId? : string) {
         };
 
         applyOperation(sceneRef.current, op);
+        sendMessage(op);
 
         if (flipped) {
           toolRef.current = {
@@ -323,6 +338,7 @@ export function useCanvasEngine(roomId? : string) {
           dy,
         };
         applyOperation(sceneRef.current, op);
+        sendMessage(op);
         toolRef.current.lastX = x;
         toolRef.current.lastY = y;
         return;
@@ -358,12 +374,10 @@ export function useCanvasEngine(roomId? : string) {
             type: "create",
             opId: crypto.randomUUID(),
             timestamp: Date.now(),
+            elementId: element.id,
             element,
           };
-          function sendOperation(op: Operation) {
-            console.log("SEND OP →", op);
-          }
-          sendOperation(op);
+          sendMessage(op);
         }
       }
       toolRef.current = { type: "idle" };
