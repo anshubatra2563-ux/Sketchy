@@ -15,7 +15,7 @@ wss.on("connection", (socket) => {
             return
         }
 
-       if (message.type === "create" || message.type === "move" || message.type === "resize") {
+       if (message.type === "create" || message.type === "move" || message.type === "resize" || message.type === "delete") {
             console.log("Broadcasting", message.type, "to room");
             BroadcastToRoom(socket, message)
         }

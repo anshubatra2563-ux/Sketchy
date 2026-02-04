@@ -27,5 +27,9 @@ export type ResizeElementOp = BaseOperation & {
     }
 }
 
-export type Operation = CreateElementOp | MoveElementOp | ResizeElementOp
+export type DeleteElementOp = BaseOperation & {
+    type : "delete"  
+}
+
+export type Operation = CreateElementOp | MoveElementOp | ResizeElementOp | DeleteElementOp;
 

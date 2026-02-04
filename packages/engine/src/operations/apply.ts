@@ -27,6 +27,13 @@ export function applyOperation(scene: SceneState, operation: Operation) {
       element.height = operation.rect.height
     }
     return;
+    case "delete": {
+      const index = scene.elements.findIndex(el => el.id == operation.elementId)
+      if (index !== -1) {
+        scene.elements.splice(index, 1)
+      }
+    }
+    return;
     default: {
       return;
     }

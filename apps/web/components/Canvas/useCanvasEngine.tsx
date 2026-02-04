@@ -42,7 +42,7 @@ function saveSceneToLocalStorage(scene: SceneState) {
   localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(scene));
 }
 
-export function useCanvasEngine(roomId? : string) {
+export function useCanvasEngine(roomId?: string) {
   const [active, setActive] = useState<ToolType>("select"); // UI state
   const activeToolRef = useRef<ToolType>("select");
   //initial tool is at ideal state
@@ -58,38 +58,48 @@ export function useCanvasEngine(roomId? : string) {
     { id: "line", label: "line", icon: <Minus /> },
   ];
 
-useEffect(() => {
-  if (!roomId) {
-    return;
-  }
-  console.log("🔌 Joining room:", roomId);
-  joinRoom(roomId);
-
-  function handleIncomingMessage(message: any) {
-  console.log("RECEIVED:", message);
-  
-  if (message.type === "create") {
-    const exists = sceneRef.current.elements.find(
-      (el) => el.id === message.element.id
-    );
-    if (!exists) {
-      applyOperation(sceneRef.current, message);
-      console.log("Created element from remote");
-    } else {
-      console.log("Element already exists, skipping");
+  useEffect(() => {
+    if (!roomId) {
+      return;
     }
-  }
-  if (message.type === "move" || message.type === "resize") {
-    applyOperation(sceneRef.current, message);
-    console.log("Applied", message.type);
-  }
-}
-  
-  onMessage(handleIncomingMessage);
-  return () => {
-    console.log("Component unmounting, room:", roomId);
-  };
-}, [roomId]);
+    console.log("🔌 Joining room:", roomId);
+    joinRoom(roomId);
+
+    function handleIncomingMessage(message: any) {
+      console.log("RECEIVED:", message);
+
+      if (message.type === "create") {
+        const exists = sceneRef.current.elements.find(
+          (el) => el.id === message.element.id
+        );
+        if (!exists) {
+          applyOperation(sceneRef.current, message);
+          console.log("Created element from remote");
+        } else {
+          console.log("Element already exists, skipping");
+        }
+      }
+      if (message.type === "move" || message.type === "resize") {
+        applyOperation(sceneRef.current, message);
+        console.log("Applied", message.type);
+      }
+      if (message.type === "delete") {
+        applyOperation(sceneRef.current, message);
+        console.log("Deleted element from remote");
+
+        // Clear selection if deleted element was selected
+        if (sceneRef.current.selectedElementId === message.elementId) {
+          sceneRef.current.selectedElementId = null;
+        }
+      }
+    }
+
+
+    onMessage(handleIncomingMessage);
+    return () => {
+      console.log("Component unmounting, room:", roomId);
+    };
+  }, [roomId]);
 
 
 
@@ -442,7 +452,26 @@ useEffect(() => {
       viewport.offsetY += e.deltaY / viewport.zoom;
       DebounceWheelSave();
     }
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.key == "Delete" || e.key === "Backspace") && sceneRef.current.selectedElementId) {
+        e.preventDefault();
+        const elementId = sceneRef.current.selectedElementId;
+        //sceneRef.current.elements = sceneRef.current.elements.filter(el => el.id !== elementId)
+        const op: Operation = {
+          type: "delete",
+          opId: crypto.randomUUID(),
+          timestamp: Date.now(),
+          elementId
+        }
+        applyOperation(sceneRef.current, op)
+        sendMessage(op)
+        sceneRef.current.selectedElementId = null
+        saveSceneToLocalStorage(sceneRef.current)
+      }
+    }
 
+
+    window.addEventListener("keydown", onKeyDown)
     canvas.addEventListener("mousedown", onMouseDown);
     canvas.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
@@ -455,6 +484,7 @@ useEffect(() => {
       canvas.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
       canvas.removeEventListener("wheel", onMouseWheel);
+      window.removeEventListener("keydown", onKeyDown);
     };
   }, []);
   return {
