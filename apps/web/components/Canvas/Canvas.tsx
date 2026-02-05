@@ -1,6 +1,7 @@
 "use client"
 
 import { ToolBar, ToolButton } from "@/components/Toolbar"
+import { Button } from "@/components/ui/Button"
 import { useCanvasEngine } from "./useCanvasEngine"
 export function Canvas({ roomId }: { roomId?: string }) {
   
