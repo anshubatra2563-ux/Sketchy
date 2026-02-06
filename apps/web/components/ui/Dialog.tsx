@@ -14,9 +14,9 @@ interface DialogProps {
 export function Dialog({ open, onClose, children, className }: DialogProps) {
     if (!open) return null;
 
-    return createPortal(<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/14 bg-opacity-50" onClick={onClose}>
+    return createPortal(<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/8" onClick={onClose}>
         <div className={cn(
-            "bg-white rounded-xl shadow-xl w-[520px] max-w-[95vw] p-6",
+                "bg-white rounded-2xl shadow-2xl w-[640px] max-w-[95vw] p-8",
             className
         )}
             onClick={(e) => e.stopPropagation()}>
