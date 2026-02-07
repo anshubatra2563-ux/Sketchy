@@ -1,51 +1,28 @@
 import { Element } from "@repo/engine";
 export function createElement(type: Element["type"], x: number, y: number):Element {
-  const id = crypto.randomUUID();
+  const baseElement = {
+    id : crypto.randomUUID(),
+    x,
+    y,
+    width:0,
+    height:0,
+    strokeColor:"#000000",
+    strokeWidth : 2,
+    strokeStyle : "solid" as const,
+    opacity : 100
+  }
 
-  switch (type) {
-    case "rectangle":
-      return {
-        id,
-        type,
-        x,
-        y,
-        width: 0,
-        height: 0,
-        fillColor: "red",
-        strokeColor: "blue",
-      };
-    case "diamond-box":
-      return {
-        id,
-        type,
-        x,
-        y,
-        width: 0,
-        height: 0,
-        fillColor: "red",
-        strokeColor: "blue",
-      };
-    case "ellipse":
-      return {
-        id,
-        type,
-        x,
-        y,
-        width: 0,
-        height: 0,
-        fillColor: "red",
-        strokeColor: "blue",
-      };
-    case "line":
-      return {
-        id,
-        type,
-        x,
-        y,
-        width: 0,
-        height: 0,
-        strokeColor: "red",
-        strokeWidth: 2,
-      };
+  if(type === "line"){
+    return {
+      ...baseElement,
+      type: "line",
+    }
+  }
+// for other shapes, we can set default fillColor and roundness
+  return {
+    ...baseElement,
+    type,
+    fillColor : "transparent",
+    roundness : "rounded" as const,
   }
 }
