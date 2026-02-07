@@ -4,48 +4,36 @@ export type Viewport = {
   zoom: number;
 };
 
-export type RectangleElement = {
+export type BaseElement = {
   id: string;
-  type: "rectangle";
   x: number;
   y: number;
   width: number;
   height: number;
+  strokeColor: string;
   fillColor: string;
-  strokeColor: string;
-};
-
-export type EllipseElement = {
-  id: string;
-  type: "ellipse";
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  fillColor: string;
-  strokeColor: string;
-};
-
-export type DiamondElement = {
-  id: string;
-  type: "diamond-box";
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  fillColor: string;
-  strokeColor: string;
-};
-export type LineElement = {
-  id: string;
-  type: "line";
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  strokeColor: string;
   strokeWidth: number;
+  strokeStyle: "solid" | "dashed" | "dotted";
+  opacity: number;
+  roundness: "sharp" | "rounded";
+}
+
+export type RectangleElement = BaseElement & {
+  type: "rectangle";
 };
+
+export type EllipseElement = BaseElement & {
+  type: "ellipse";
+};
+
+export type DiamondElement = BaseElement & {
+  type: "diamond-box";
+};
+
+export type LineElement = Omit<BaseElement, "fillColor" | "roundness"> & {
+  type: "line";
+};
+
 export type Element =
   | RectangleElement
   | EllipseElement
