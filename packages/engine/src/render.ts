@@ -53,29 +53,65 @@ export function renderScene(
   }
 }
 
+function applyStrokeStyle(ctx: CanvasRenderingContext2D, StrokeStyle: Element["strokeStyle"]) {
+  if (StrokeStyle === "dashed") {
+    ctx.setLineDash([12, 8]);
+  } else if (StrokeStyle === "dotted") {
+    ctx.setLineDash([2, 6]);
+  } else {
+    ctx.setLineDash([]);
+  }
+}
+
+function applyFillStyle(ctx: CanvasRenderingContext2D, element: Element) {
+  if (element.type === "line") return false;
+  if (element.fillColor === "transparent") return false;
+
+  ctx.fillStyle = element.fillColor;
+  return true;
+}
+
+
 function drawElement(ctx: CanvasRenderingContext2D, element: Element) {
+
+  ctx.save()
+  ctx.strokeStyle = element.strokeColor;
+  ctx.lineWidth = element.strokeWidth;
+  ctx.globalAlpha = element.opacity / 100;
+
+  applyStrokeStyle(ctx, element.strokeStyle);
+
   switch (element.type) {
     case "rectangle":
       {
-        ctx.fillStyle = element.fillColor;
-        ctx.fillRect(element.x, element.y, element.width, element.height);
-        ctx.strokeStyle = element.strokeColor;
-        ctx.strokeRect(element.x, element.y, element.width, element.height);
-      }
-      break;
+        const hasFill = applyFillStyle(ctx, element);
 
+        // Rounded corners support
+        if (element.roundness === "rounded") {
+          const radius = Math.min(Math.abs(element.width), Math.abs(element.height)) * 0.1;
+          ctx.beginPath();
+          ctx.roundRect(element.x, element.y, element.width, element.height, radius);
+          if (hasFill) ctx.fill();
+          ctx.stroke();
+        } else {
+          // Sharp corners
+          if (hasFill) {
+            ctx.fillRect(element.x, element.y, element.width, element.height);
+          }
+          ctx.strokeRect(element.x, element.y, element.width, element.height);
+        }
+        break;
+      }
     case "ellipse":
       {
         const centerX = element.x + element.width / 2;
         const centerY = element.y + element.height / 2;
         const radiusX = Math.abs(element.width / 2);
         const radiusY = Math.abs(element.height / 2);
-
+        const hasFill = applyFillStyle(ctx, element);
         ctx.beginPath();
         ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
-        ctx.fillStyle = element.fillColor;
-        ctx.fill();
-        ctx.strokeStyle = element.strokeColor;
+        if (hasFill) ctx.fill();
         ctx.stroke();
       }
       break;
@@ -83,16 +119,15 @@ function drawElement(ctx: CanvasRenderingContext2D, element: Element) {
       {
         const centerX = element.x + element.width / 2;
         const centerY = element.y + element.height / 2;
+        const hasFill = applyFillStyle(ctx, element);
         ctx.beginPath();
         ctx.moveTo(centerX, element.y); // TOP
         ctx.lineTo(element.x + element.width, centerY); // RIGHT
         ctx.lineTo(centerX, element.y + element.height); // BOTTOM
         ctx.lineTo(element.x, centerY); // LEFT
         ctx.closePath();
-        ctx.strokeStyle = element.strokeColor;
-        ctx.fillStyle = element.fillColor;
         ctx.stroke();
-        ctx.fill();
+        if (hasFill) ctx.fill();
       }
       break;
     case "line":
@@ -106,12 +141,13 @@ function drawElement(ctx: CanvasRenderingContext2D, element: Element) {
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
         ctx.strokeStyle = element.strokeColor;
-        ctx.lineWidth = (element as LineElement).strokeWidth;
+        ctx.lineWidth = element.strokeWidth;
         ctx.lineCap = "round";
         ctx.stroke();
       }
       break;
   }
+  ctx.restore()
 }
 
 // this function will give coordinates of the selection box
