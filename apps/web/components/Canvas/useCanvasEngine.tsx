@@ -492,5 +492,6 @@ export function useCanvasEngine(roomId?: string) {
     tools,
     active,
     setActive,
+    sceneRef
   };
 }
