@@ -30,6 +30,7 @@ export function Sidebar({ selectedElement, onUpdateElement, onClose }: SidebarPr
   }, []);
 
   if (!selectedElement) return null;
+  const hasFill = selectedElement.type !== "line";
 
   return (
     <div className="fixed right-0 top-0 h-full w-80 bg-white border-l border-gray-200 shadow-lg z-30 flex flex-col">
@@ -45,7 +46,7 @@ export function Sidebar({ selectedElement, onUpdateElement, onClose }: SidebarPr
       </div>
 
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 space-y-6">
-        
+
         <div>
           <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
             Shape
@@ -65,6 +66,21 @@ export function Sidebar({ selectedElement, onUpdateElement, onClose }: SidebarPr
             label="Stroke color"
           />
         </div>
+        {hasFill && "fillColor" in selectedElement && (
+          <div>
+            <label className="text-xs text-gray-500 uppercase mb-3 block">
+              Background
+            </label>
+
+            <ColorPicker
+              value={selectedElement.fillColor}
+              onChange={(color) =>
+                onUpdateElement({ fillColor: color })
+              }
+              showTransparent
+            />
+          </div>
+        )}
 
       </div>
     </div>
